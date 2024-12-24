@@ -11,7 +11,9 @@ body {
     color: #333;
     line-height: 1.6;
     font-size: 16px;
-    padding: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
 }
 
 /* Заголовки */
@@ -75,115 +77,38 @@ nav a:hover {
     transform: scale(1.05);
 }
 
-/* Контент */
 .content {
-    max-width: 1200px;
+    width: 75%;
     margin: 40px auto;
     padding: 20px;
     background-color: #fff;
     border-radius: 10px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    flex-grow: 1;
 }
 
-h2 {
-    color: #e67e22;
-    font-size: 2.5rem;
-    margin-bottom: 15px;
+/* Шаги */
+.step {
+    margin-bottom: 40px;
 }
 
-p {
-    font-size: 1.1rem;
-    color: #555;
-    margin-bottom: 20px;
-    line-height: 1.8;
-}
-
-/* Секция загрузки */
-.upload-section {
-    background-color: #2980b9;
-    color: white;
-    margin: 30px 0;
-    padding: 40px;
-    border-radius: 10px;
-    text-align: center;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    transition: transform 0.3s ease;
-}
-
-.upload-section:hover {
-    transform: scale(1.02);
-}
-
-.upload-section button {
-    background-color: #e67e22;
-    color: white;
-    padding: 15px 30px;
-    border: none;
-    border-radius: 5px;
-    font-size: 1.2rem;
-    cursor: pointer;
-    transition: background-color 0.3s ease, transform 0.2s ease;
-}
-
-.upload-section button:hover {
-    background-color: #d35400;
-    transform: scale(1.05);
-}
-
-.upload-section p {
-    font-size: 1rem;
-    color: #ecf0f1;
-    margin-top: 15px;
-}
-
-/* Описание проекта */
-.description {
-    margin: 30px auto;
-    padding: 20px;
-    max-width: 800px;
-    background-color: #ecf0f1;
-    border-radius: 8px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-    text-align: left;
-}
-
-.description h3 {
+.step h3 {
     color: #2c3e50;
     font-size: 1.8rem;
     margin-bottom: 15px;
+    text-align: center;
 }
 
-.description p {
+.step p {
     font-size: 1rem;
     color: #555;
     line-height: 1.8;
 }
 
-/* Мобильная адаптация */
-@media (max-width: 768px) {
-    header h1 {
-        font-size: 2rem;
-    }
-
-    nav a {
-        font-size: 1rem;
-        padding: 0 15px;
-    }
-
-    .content {
-        margin: 20px;
-        padding: 15px;
-    }
-
-    .upload-section {
-        width: 90%;
-        padding: 25px;
-    }
-
-    .description {
-        width: 90%;
-        padding: 15px;
-    }
+/* Карта */
+#map {
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 
 /* Footer */
@@ -216,9 +141,17 @@ p {
     padding: 0 15px;
     font-size: 1.4rem;
     transition: color 0.3s ease, transform 0.3s ease;
+    font-size: 100%;
 }
 
 .social-links a:hover {
     color: #e67e22;
     transform: scale(1.1);
+}
+
+
+
+/* Убираем логотип */
+.leaflet-control-attribution a {
+    display: none !important;
 }

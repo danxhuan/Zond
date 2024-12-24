@@ -1,30 +1,14 @@
-// Позже здесь сделаем функцию для передачи изображений
-
 document.addEventListener("DOMContentLoaded", function () {
-    const uploadButton = document.querySelector(".upload-section button");
-    uploadButton.addEventListener("click", function () {
-        alert("Кнопка для загрузки изображения нажата.");
-    });
+    const mapElement = document.querySelector("#map");
 
-    const uploadSection = document.querySelector(".upload-section");
+    // Инициализация карты Leaflet
+    const mapInstance = L.map('map').setView([45.213657, 39.691225], 13);
 
-    // Пример кнопки загрузки
-    uploadSection.addEventListener("dragover", function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-        uploadSection.style.backgroundColor = "#3498db";
-    });
+    // Слой карты OpenStreetMap
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {}).addTo(mapInstance);
 
-    uploadSection.addEventListener("dragleave", function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-        uploadSection.style.backgroundColor = "#2980b9";
-    });
-
-    uploadSection.addEventListener("drop", function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-        uploadSection.style.backgroundColor = "#2980b9";
-        alert("Изображение загружено!");
-    });
+    // маркер на карте
+    L.marker([45.213657, 39.691225]).addTo(mapInstance)
+        .bindPopup('Усть-Лабинск')
+        .openPopup();
 });
