@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Обработчик карт</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <div class="logo-container">
+            <h1 class="site-title">Zонд</h1>
+            <p class="site-description">Анализ карт и изображений для глубоких географических исследований</p>
+        </div>
+    </header>
+    
+    <nav>
+        <a href="#">Главная</a>
+        <a href="#">Описание проекта</a>
+        <a href="#">Контакты</a>
+    </nav>
+
+    <div class="content">
+        <div class="step">
+            <h3>Карта рельефа</h3>
+            <div id="map" style="width: 100%; height: 750px; margin-top: 20px;"></div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <p>&copy; 2024 Zонд. Все права защищены.</p>
+            <div class="social-links">
+                <a href="https://www.notion.so/Main-1435eda4c89880eca45bea08584fd9ac?pvs=4" target="_blank"><i class="fas fa-book"></i> Notion</a>
+                <a href="https://github.com/danxhuan/Zond" target="_blank"><i class="fab fa-github"></i> GitHub</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
