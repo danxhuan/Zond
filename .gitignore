@@ -1,0 +1,6 @@
+*cache*
+*test*
+*.so
+*.tif
+build
+venv
