@@ -59,7 +59,7 @@ class FlowCalc:
         plt.show()
 
     def save_results(self):
-        path = self.save_path.split('.')[0]
+        path = self.save_path.split('/')[-1].split('.')[0]
         self.geodata.update(count=1)
         names = ["filled", "accum", "depressions"]
         descs = ["DEM with filled depressions", "Flow accumulation",

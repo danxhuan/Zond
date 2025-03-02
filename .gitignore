@@ -1,7 +1,7 @@
 *cache*
 *test*
-*.so
-*.tif
+*.so*
+*.tif*
 build
 venv*.log
 *.pot
@@ -11,3 +11,6 @@ local_settings.py
 db.sqlite3
 db.sqlite3-journal
 media
+
+venv
+*.kml*
