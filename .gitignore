@@ -1,6 +1,7 @@
 *cache*
 *test*
-*.so
-*.tif
+*.so*
+*.tif*
 build
 venv
+*.kml*
