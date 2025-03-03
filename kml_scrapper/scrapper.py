@@ -41,13 +41,13 @@ def get_box(ls: list) -> list:
     return [x1, y1, x2, y2]
 
 
-def get_kml_regions(kml_path: str, tif_path: str, forced=True) -> None:
+def get_kml_regions(kml_path: str, tif_path: str, forced=True) -> str:
     ''' Получение областей из исходной ЦМР по файлам kml'''
     # проверка путей
     if not os.path.isdir(kml_path) or not os.path.isfile(tif_path):
         raise OSError
     # выходная директория 
-    res_path = os.path.join(os.path.split(tif_path)[0], 'regions/')
+    res_path = os.path.join(os.path.split(kml_path)[0], 'regions/')
 
     if (not os.path.exists(res_path)):
         os.mkdir(res_path)
@@ -112,6 +112,7 @@ def get_kml_regions(kml_path: str, tif_path: str, forced=True) -> None:
             newfile.close()
             print("File processed!")
     file.close()
+    return res_path
 
 
 if __name__ == "__main__":

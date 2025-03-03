@@ -1,3 +1,4 @@
+import os
 import rasterio
 from rasterio.enums import ColorInterp
 import numpy as np
@@ -59,7 +60,9 @@ class FlowCalc:
         plt.show()
 
     def save_results(self):
-        path = self.save_path.split('/')[-1].split('.')[0]
+        path = os.path.split(self.save_path)
+        orig_name = path[1].split('.')[0]
+        res_path = os.path.join(path[0], orig_name + '_result')
         self.geodata.update(count=1)
         names = ["filled", "accum", "depressions"]
         descs = ["DEM with filled depressions", "Flow accumulation",
@@ -68,10 +71,14 @@ class FlowCalc:
         colormaps = [[ColorInterp.gray],
                      [ColorInterp.blue],
                      [ColorInterp.blue]]
+        if not os.path.exists(res_path):
+            os.mkdir(os.path.join(res_path))
         for i in range(3):
             try:
-                file = rasterio.open(path + '_result_' + names[i]+'.tif',
-                                     'w', **self.geodata)
+                file = rasterio.open(os.path.join(
+                    res_path,
+                    names[i] + '.tif'),
+                    'w', **self.geodata)
             except Exception:
                 raise FileNotFoundError
             file.colorinterp = colormaps[i]
