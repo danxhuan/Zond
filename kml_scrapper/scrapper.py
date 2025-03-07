@@ -41,13 +41,13 @@ def get_box(ls: list) -> list:
     return [x1, y1, x2, y2]
 
 
-def get_kml_regions(kml_path: str, tif_path: str) -> None:
+def get_kml_regions(kml_path: str, tif_path: str, forced=True) -> str:
     ''' Получение областей из исходной ЦМР по файлам kml'''
     # проверка путей
     if not os.path.isdir(kml_path) or not os.path.isfile(tif_path):
         raise OSError
     # выходная директория 
-    res_path = os.path.join(os.path.split(tif_path)[0], 'regions/')
+    res_path = os.path.join(os.path.split(kml_path)[0], 'regions/')
 
     if (not os.path.exists(res_path)):
         os.mkdir(res_path)
@@ -63,9 +63,14 @@ def get_kml_regions(kml_path: str, tif_path: str) -> None:
     # перебираем файлы
     for entry in contents:
         name = os.path.join(kml_path, entry)  # полное имя файла
+        res_name = os.path.join(
+                    res_path, entry.split('.')[0] + '.tif')
+        if (not forced and os.path.isfile(res_name)):
+            print("File already exists!")
         if os.path.isfile(name) and entry.split('.')[-1] == 'kml':
             print(f"Found entry: {entry}")
-            points = get_box(scrape_from_file(name))  # получаем границы региона
+            # получаем границы региона
+            points = get_box(scrape_from_file(name))  
             if (len(points) == 0):
                 continue
             bounds = file.bounds  # получаем границы файла
@@ -99,8 +104,7 @@ def get_kml_regions(kml_path: str, tif_path: str) -> None:
                 }
             )
             try:
-                newfile = rasterio.open(os.path.join(
-                    res_path, entry.split('.')[0] + '.tif'), 'w', **mt)
+                newfile = rasterio.open(res_name, 'w', **mt)
             except rasterio.errors.RasterioIOError:
                 print("Can't save this file!")
                 continue
@@ -108,6 +112,7 @@ def get_kml_regions(kml_path: str, tif_path: str) -> None:
             newfile.close()
             print("File processed!")
     file.close()
+    return res_path
 
 
 if __name__ == "__main__":

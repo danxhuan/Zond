@@ -1,8 +1,12 @@
+import os
 import rasterio
 from rasterio.enums import ColorInterp
 import numpy as np
 import matplotlib.pyplot as plt
-import flow_funcs as fl
+if __name__ == '__main__':
+    import flow_funcs as fl
+else:
+    from . import flow_funcs as fl
 
 # CONST
 
@@ -30,10 +34,12 @@ class FlowCalc:
         print("Filling depressions...")
         filled_dem = fl.fill_depressions(dem)
         print("Calculating flow...")
-        flow = fl.calc_flow(filled_dem, self.cell_size)
+        breached = fl.breach_depressions_pit_cells(dem, 10)
+        flow = fl.calc_flow(breached,
+                            self.cell_size)
         print("Calculating flow accumulation...")
         acc = fl.calc_flow_accumulation(flow)
-        self.results = (filled_dem, flow, acc)
+        self.results = (filled_dem, flow, acc, breached)
         print("Calculations are finished!")
 
     def visualise_result(self):
@@ -59,30 +65,39 @@ class FlowCalc:
         plt.show()
 
     def save_results(self):
-        path = self.save_path.split('/')[-1].split('.')[0]
+        path = os.path.split(self.save_path)
+        orig_name = path[1].split('.')[0]
+        res_path = os.path.join(path[0], orig_name + '_result')
         self.geodata.update(count=1)
-        names = ["filled", "accum", "depressions"]
+        names = ["filled", "accum", "depressions", "breached"]
         descs = ["DEM with filled depressions", "Flow accumulation",
-                 "Filled depressions"]
-        data = [self.results[0], self.results[2], self.results[0] - self.dem]
+                 "Filled depressions", "Breached DEM"]
+        data = [self.results[0], self.results[2], self.results[0] - self.dem, self.results[3]]
         colormaps = [[ColorInterp.gray],
                      [ColorInterp.blue],
-                     [ColorInterp.blue]]
-        for i in range(3):
+                     [ColorInterp.blue],
+                     [ColorInterp.gray]]
+        if not os.path.exists(res_path):
+            os.mkdir(os.path.join(res_path))
+        for i in range(4):
             try:
-                file = rasterio.open(path + '_result_' + names[i]+'.tif',
-                                     'w', **self.geodata)
+                file = rasterio.open(os.path.join(
+                    res_path,
+                    names[i] + '.tif'),
+                    'w', **self.geodata)
             except Exception:
                 raise FileNotFoundError
             file.colorinterp = colormaps[i]
             file.write(data[i], 1)
             file.close()
             print(f'{descs[i]}: {names[i]}')
+    
+
 
 
 # FUNC
 
 if __name__ == '__main__':
-    app = FlowCalc('output_SRTMGL1.tif', 30)
+    app = FlowCalc('/home/egor/dev/IT/Zond/calculations/0127.tif', 30)
     app.find_results()
     app.save_results()
