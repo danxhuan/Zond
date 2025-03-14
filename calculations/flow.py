@@ -21,9 +21,10 @@ class FlowCalc:
         except Exception:
             print("Не могу загрузить входной файл!")
             raise FileNotFoundError
-        self.dem = file.read(1)
+        self.dem = file.read(1, out_dtype=np.float64)
         print("Data read.")
         self.geodata = file.meta
+        self.geodata['dtype'] = 'float64'
         print("Metadata read.")
         self.results = None
         file.close()
@@ -34,11 +35,11 @@ class FlowCalc:
         print("Filling depressions...")
         filled_dem = fl.fill_depressions(dem)
         print("Calculating flow...")
-        breached = fl.breach_depressions_pit_cells(dem, 10)
+        breached = fl.Lindsay(dem)
         flow = fl.calc_flow(breached,
                             self.cell_size)
         print("Calculating flow accumulation...")
-        acc = fl.calc_flow_accumulation(flow)
+        acc = fl.calc_flow_accumulation(breached, flow)
         self.results = (filled_dem, flow, acc, breached)
         print("Calculations are finished!")
 
@@ -73,6 +74,7 @@ class FlowCalc:
         descs = ["DEM with filled depressions", "Flow accumulation",
                  "Filled depressions", "Breached DEM"]
         data = [self.results[0], self.results[2], self.results[0] - self.dem, self.results[3]]
+        types = ["float64", "float64", "int16", "float64"]
         colormaps = [[ColorInterp.gray],
                      [ColorInterp.blue],
                      [ColorInterp.blue],
@@ -80,6 +82,7 @@ class FlowCalc:
         if not os.path.exists(res_path):
             os.mkdir(os.path.join(res_path))
         for i in range(4):
+            self.geodata['dtype'] = types[i]
             try:
                 file = rasterio.open(os.path.join(
                     res_path,

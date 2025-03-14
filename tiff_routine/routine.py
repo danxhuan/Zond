@@ -34,7 +34,7 @@ def routine(forced=True):
             calc.find_results()
             calc.save_results()
             successful += 1
-        except Exception:
+        except ZeroDivisionError:
             print("Unknown error was caught while processing!")
     print("Routine is done!")
     print(f"{successful} succesful of {num} TIFF files.")
