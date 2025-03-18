@@ -1,3 +1,4 @@
+import glob
 import os
 import numpy as np
 import tensorflow as tf
@@ -32,6 +33,12 @@ def interpolate_terrain(input_path, output_path, model_path):
             data = src.read(1, masked=True).astype(np.float32)
             profile = src.profile.copy()
             transform = src.transform
+
+            # Сохраняем дополнительные метаданные
+            tags = src.tags()
+            band_description = src.descriptions[0] if src.descriptions else None
+            scale = src.scales[0] if src.scales else None
+            offset = src.offsets[0] if src.offsets else None
 
             # Обработка NODATA
             data = np.ma.filled(data, np.nan)
@@ -99,9 +106,16 @@ def interpolate_terrain(input_path, output_path, model_path):
                 'compress': 'lzw'
             })
 
-            # Сохранение
+            # Сохранение с восстановлением метаданных
             with rasterio.open(output_path, 'w', **profile) as dst:
                 dst.write(output.astype(np.float32), 1)
+                dst.update_tags(**tags)
+                if band_description:
+                    dst.set_band_description(1, band_description)
+                if scale is not None:
+                    dst.scales = [scale]
+                if offset is not None:
+                    dst.offsets = [offset]
 
             print(f"Успешно сохранено в {output_path}")
             return True
@@ -109,7 +123,6 @@ def interpolate_terrain(input_path, output_path, model_path):
     except Exception as e:
         print(f"Ошибка: {str(e)}")
         return False
-
 
 def visualize_comparison(orig_path, result_path):
     """Визуализация результатов с общей шкалой"""
@@ -134,8 +147,16 @@ def visualize_comparison(orig_path, result_path):
     plt.tight_layout()
     plt.show()
 
+
 if __name__ == "__main__":
-    # Запуск интерполяции
-    if interpolate_terrain("2207.tif", "2207_6.tif", "7_model.h5"):
-        # Визуализация результатов
-        visualize_comparison("2207.tif", "2207_6.tif")
+    directory = r'C:\Users\vova\PycharmProjects\PythonProject7\to_do\regions'
+
+    # Поиск всех файлов с расширением .tif или .tiff
+    tif_files = glob.glob(os.path.join(directory, '*.tif'))
+
+    for file in tif_files:
+        # Запуск интерполяции
+        if interpolate_terrain(file, file.split(".")[0] + "_5" + file.split(".")[1], "7_model.h5"):
+            # Визуализация результатов
+            print("OK")
+            visualize_comparison(file, file.split(".")[0] + "_5" + file.split(".")[1])
