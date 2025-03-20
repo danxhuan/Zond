@@ -1,40 +1,90 @@
-{% extends 'mainside/layout.html' %}
-
-{% block title %}
-Обработчик карт
-{% endblock %}
-
-{% block content %}
-<header>
-        <div class="logo-container">
-            <h1 class="site-title">Zонд</h1>
-            <p class="site-description">Анализ карт и изображений для глубоких географических исследований</p>
-        </div>
-    </header>
-
-    <nav>
-        <a href="#">Главная</a>
-        <a href="about">Описание проекта</a>
-        <a href="#">Контакты</a>
-    </nav>
-
-    <div class="content">
-        <div class="step">
-            <h3>Карта рельефа</h3>
-            <div id="map" style="width: 100%; height: 750px; margin-top: 20px;"></div>
-        </div>
-    </div>
-
-    <footer class="footer">
-        <div class="footer-content">
-            <p>&copy; 2024 Zонд. Все права защищены.</p>
-            <div class="social-links">
-                <a href="https://www.notion.so/Main-1435eda4c89880eca45bea08584fd9ac?pvs=4" target="_blank"><i class="fas fa-book"></i> Notion</a>
-                <a href="https://github.com/danxhuan/Zond" target="_blank"><i class="fab fa-github"></i> GitHub</a>
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zонд</title>
+    <script src="{% static 'mainside/libs/btn/anim-menu-btn.min.js' %}" defer></script>
+    <link rel="stylesheet" href="{% static 'mainside/libs/swiper/swiper-bundle.min.css' %}">
+    <script src="{% static 'mainside/libs/swiper/swiper-bundle.min.js' %}" defer></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js" defer></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'mainside/css/main.css' %}">
+    <script src="{% static 'mainside/js/app.js' %}" defer></script>
+</head>
+<body>
+    <div class="swiper slider">
+        <div class="slider-ui">
+            <div class="header-container">
+                <div class="header-logo">
+                    <a href="#" class="logo">
+                        <img src="{% static 'mainside/img/logo.svg' %}" alt="Zонд">
+                    </a>
+                </div>
+                <nav class="header-menu">
+                    <a href="#" data-slide="0">ГЛАВНАЯ</a>
+                    <a href="#" data-slide="1">КАРТА</a>
+                    <a href="#" data-slide="2">ССЫЛКИ</a>
+                </nav>
+                <a href="#" class="header-button" data-slide="1">Карта</a>
+            </div>
+            <div class="container header-wrapper">
+                <div class="header-bottom"></div>
             </div>
         </div>
-    </footer>
-
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-    <script src="script.js"></script>
-{% endblock %}
+        <div class="swiper-wrapper">
+            <div class="swiper-slide slider__item">
+                <div class="slider__layer" data-swiper-parallax="35%" style="background-image: url({% static 'mainside/img/slides/slide-1-layer-back.jpg' %});"></div>
+                <div class="slider__layer" data-swiper-parallax="25%" style="background-image: url({% static 'mainside/img/slides/slide-1-layer-middle.png' %});"></div>
+                <div class="slider__layer" data-swiper-parallax="14%" style="background-image: url({% static 'mainside/img/slides/slide-1-layer-front.png' %});"></div>
+                <div class="header-content">
+                    <div class="header-content__slide active">
+                        <h1 class="letters" data-swiper-parallax="120%">Zонд</h1>
+                        <div class="header-text" data-swiper-parallax="100%">
+                            <p>Наша интерактивная карта предоставляет детальную информацию о ландшафте Усть-Лабинского района, что особенно полезно для тех, кто заинтересован в развитии сельского хозяйства или изучении природных особенностей территории</p><br>
+                            <button class="button button--main" data-slide="1">Перейти к карте</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="swiper-slide slider__item">
+                <div class="slider__layer" data-swiper-parallax="35%" style="background-image: url({% static 'mainside/img/slides/slide-2-layer-back.jpg' %});"></div>
+                <div class="map-slide">
+                    <h1 class="map-title">Карта рельефа</h1>
+                    <div class="map-description">
+                        <p>Интерактивная карта Усть-Лабинского района показывает особенности рельефа, уклонов местности и систему водотоков. Эти данные важны для планирования сельскохозяйственных работ и анализа природных условий</p>
+                    </div>
+                    <div id="map" class="map-container">
+                        <button class="map-fullscreen-btn" id="openFullscreen">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M3 3H9V5H5V9H3V3Z" fill="currentColor"/>
+                                <path d="M3 21H9V19H5V15H3V21Z" fill="currentColor"/>
+                                <path d="M21 3H15V5H19V9H21V3Z" fill="currentColor"/>
+                                <path d="M21 21H15V19H19V15H21V21Z" fill="currentColor"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="swiper-slide slider__item">
+                <div class="slider__layer" data-swiper-parallax="35%" style="background-image: url({% static 'mainside/img/slides/slide-3-layer-back.jpg' %});"></div>
+                <div class="slider__layer" data-swiper-parallax="25%" style="background-image: url({% static 'mainside/img/slides/slide-3-layer-middle.png' %});"></div>
+                <div class="slider__layer" data-swiper-parallax="14%" style="background-image: url({% static 'mainside/img/slides/slide-3-layer-front.png' %});"></div>
+                <div class="contacts-section">
+                    <h1 class="map-title">Ссылки</h1>
+                    <div class="map-description">
+                        <p>Наш проект находится в стадии активной разработки. Ниже представлены ссылки на платформы, где вы можете следить за процессом разработки и первыми узнавать о новых обновлениях интерактивной карты</p>
+                    </div>
+                    <div class="social-links">
+                        <a href="https://clck.ru/3HMHzW" class="social-btn notion" target="_blank">Notion</a>
+                        <a href="https://clck.ru/3HMJBq" class="social-btn github" target="_blank">GitHub</a>
+                        <a href="https://clck.ru/3HMKRf" class="social-btn miro" target="_blank">Miro</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
