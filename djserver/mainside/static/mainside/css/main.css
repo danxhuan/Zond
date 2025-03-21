@@ -1,8 +1,8 @@
 @import '../libs/btn/anim-menu-btn.css';
-@import '../css/vars.css';
-@import '../css/grid.css';
-@import '../css/links.css';
-@import '../css/contacts.css';
+@import 'vars.css';
+@import '/grid.css';
+@import '/links.css';
+@import 'contacts.css';
 
 * {
 	margin: 0;
