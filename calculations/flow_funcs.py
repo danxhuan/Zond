@@ -169,12 +169,21 @@ def fill_depressions(dem: np.ndarray) -> np.ndarray:
     return filled_dem
 
 
+def get_distance(n):
+    if n in [0, 2, 4, 6]:
+        return 1
+    else:
+        return np.sqrt(2)
+
+
 def breach_depressions_least_cost(dem: np.ndarray, max_dist=20,
                                   max_cost=np.inf,
                                   flat_increment=None) -> np.ndarray:
     rows, cols = dem.shape
-    # Если инкремент не задан, то вычисляем его сами
-    if flat_increment is None or flat_increment == 0:
+    nodata = np.nan
+    minimize_dist = True
+
+    if flat_increment is None or flat_increment == 0:  # Yt
         elev_range = np.max(dem) - np.min(dem)
         small_num = 1.0 / (10 ** (9 - len(str(int(elev_range))))) * np.sqrt(2)
     else:
@@ -182,47 +191,62 @@ def breach_depressions_least_cost(dem: np.ndarray, max_dist=20,
 
     output = dem.copy().astype(np.float64)
 
-    # Коэффициенты для просчёта весов
+    dx = [1, 1, 1, 0, -1, -1, -1, 0]
+    dy = [-1, 0, 1, 1, 1, 0, -1, -1]
     diag_dist = np.sqrt(2)
-    cost_dist = [1, diag_dist, 1, diag_dist, 1, diag_dist, 1, diag_dist]
+    cost_dist = [diag_dist, 1, diag_dist, 1, diag_dist, 1, diag_dist, 1]
     pits = []
-
-    # Поиск ям
     for row in range(1, rows-1):
         for col in range(1, cols-1):
             z = output[row, col]
+            if z == nodata:
+                continue
+                    
+            # проверка на яму
             is_pit = True
             min_zn = np.inf
-            for d in range(8):
-                zn = output[row + d_row[d], col + d_col[d]]
+            for n in range(8):
+                zn = output[row + dy[n], col + dx[n]]
+                if zn == nodata:
+                    is_pit = False
+                    break
                 if zn < z:
                     is_pit = False
                     break
                 if zn < min_zn:
                     min_zn = zn
-            # Текущая ячейка - яма
+            
             if is_pit:
-                # поднимаем яму для лучшего просчета
                 output[row, col] = min_zn - small_num
                 pits.append((row, col, z))
-    # Сортируем ямы по высоте
+        
+    # Сортируем ямы
     pits.sort(key=lambda x: -x[2])
-    # Массивы для просчета пути (Алгоритм Дейкстры)
+    num_deps = len(pits)
+        
+    # Инициализация массивов
     backlink = -np.ones((rows, cols), dtype=np.int8)
     encountered = np.zeros((rows, cols), dtype=np.int8)
     path_length = np.zeros((rows, cols), dtype=np.int16)
-
+        
+    # Отслеживание 
+    num_solved = 0
+    num_unsolved = 0
+    unsolved_pits = []
+        
+    # Обрабатываем каждую яму
     while pits:
         row, col, z = pits.pop()
-
-        # Проверяем, была ли устранена текущая яма
+            
+        # Проверка, сохранилась ли яма
         is_still_pit = True
-        for d in range(8):
-            zn = output[row + d_row[d], col + d_col[d]]
-            if zn < z:
+        for n in range(8):
+            zn = output[row + dy[n], col + dx[n]]
+            if zn < z and zn != nodata:
                 is_still_pit = False
+                num_solved += 1
                 break
-
+            
         if is_still_pit:
             # Вычисляем стоимость пути
             encountered[row, col] = 1
@@ -230,43 +254,42 @@ def breach_depressions_least_cost(dem: np.ndarray, max_dist=20,
             heapq.heappush(heap, (0.0, row, col))
             scanned_cells = [(row, col)]
             found_solution = False
-
             while heap and not found_solution:
                 accum, r, c = heapq.heappop(heap)
+                if accum > max_cost:
+                    unsolved_pits.append((row, col, z))
+                    num_unsolved += 1
+                    break
                 length = path_length[r, c]
                 zn = output[r, c]
                 cost1 = zn - z + length * small_num
-                for d in range(8):
-                    rn = r + d_row[d]
-                    cn = c + d_col[d]
-                        
-                    if (0 <= rn < rows and 0 <= cn < cols and 
-                        encountered[rn, cn] != 1):
-                            
+                for n in range(8):
+                    rn = r + dy[n]
+                    cn = c + dx[n]
+                    if (0 <= rn < rows and 0 <= cn < cols and encountered[rn, cn] != 1 and output[rn, cn] != nodata):
                         scanned_cells.append((rn, cn))
                         length_n = length + 1
                         path_length[rn, cn] = length_n
-                        backlink[rn, cn] = (d + 4) % 8
+                        backlink[rn, cn] = (n + 4) % 8
                             
                         zn = output[rn, cn]
                         zout = z - (length_n * small_num)
                             
                         if zn > zout:
                             cost2 = zn - zout
-                            new_cost = (accum + (cost1 + cost2)/2 *
-                                        cost_dist[d])
+                            new_cost = (accum + (cost1 + cost2)/2 * cost_dist[n] if minimize_dist else accum + cost2)
                                 
                             encountered[rn, cn] = 1
                             if length_n <= max_dist:
                                 heapq.heappush(heap, (new_cost, rn, cn))
                         else:
-                            # Нашли точку перелива
+                            # Found a cell to breach to
                             r_breach, c_breach = rn, cn
                             while True:
                                 if backlink[r_breach, c_breach] > -1:
                                     b = backlink[r_breach, c_breach]
-                                    r_breach += d_row[b]
-                                    c_breach += d_col[b]
+                                    r_breach += dy[b]
+                                    c_breach += dx[b]
                                     zn = output[r_breach, c_breach]
                                     length = path_length[r_breach, c_breach]
                                     zout = z - (length * small_num)
@@ -274,10 +297,12 @@ def breach_depressions_least_cost(dem: np.ndarray, max_dist=20,
                                         output[r_breach, c_breach] = zout
                                 else:
                                     break
+                            
+                            num_solved += 1
                             found_solution = True
                             break
                 
-        # Возвращаем к первоначальному состоянию
+        # Востанавливаем начальные условия
         for r, c in scanned_cells:
             backlink[r, c] = -1
             encountered[r, c] = 0

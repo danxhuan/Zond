@@ -80,8 +80,7 @@ class FlowCalc:
         print("Filling depressions...")
         filled_dem = fl.fill_depressions(dem)
         print("Calculating flow...")
-        breached = fl.breach_depressions_least_cost(dem, 100, 10,
-                                                    fill_deps=False)
+        breached = fl.breach_depressions_least_cost(dem, 100, 20)
         flow = fl.calc_flow(breached,
                             self.cell_size)
         print("Calculating flow accumulation...")
