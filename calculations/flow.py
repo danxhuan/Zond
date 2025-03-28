@@ -26,8 +26,8 @@ def extract_streams(acc: np.ndarray,
         "features": []
     }
     
-    treshold = max(acc.shape[0], acc.shape[1])
-    streams = (acc >= 100).astype(np.uint8)
+    threshold = np.float64(np.quantile(acc, 0.9))
+    streams = (acc > threshold).astype(np.uint8)
 
     for shape, value in rasterio.features.shapes(streams, transform=transform):
         if value == 1:
