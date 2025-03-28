@@ -60,6 +60,10 @@ class Heap():
 
     def is_empty(self):
         return len(self.data) == 0
+    
+    def clear(self):
+        while not self.is_empty():
+            self.pop()
 
 
 def breach_depressions_pit_cells(dem: np.ndarray, max_dist: int) -> np.ndarray:
@@ -130,68 +134,6 @@ def breach_depressions_pit_cells(dem: np.ndarray, max_dist: int) -> np.ndarray:
 
     return dem
 
-
-def Lindsay(dem_orig: np.ndarray) -> np.ndarray:
-    rows, cols = dem_orig.shape
-    dem = dem_orig.copy()
-    NO_BACK_LINK = -1
-    UNVISITED = 0
-    EDGE = 1
-    VISITED = 2
-    backlinks = np.full((rows, cols, 2), -1, dtype=np.int16)
-    visited = np.zeros_like(dem, dtype=np.uint8)
-    pits = np.zeros_like(dem, dtype=bool)
-    flood = []
-
-    pq = Heap()
-
-    for r in range(rows):
-        for c in range(cols):
-            if (r == 0 or r == rows - 1 or c == 0 or c == cols - 1):
-                pq.insert((dem[r, c], r, c))
-                visited[r, c] = EDGE
-                continue
-
-            lowest_neighbour = np.inf
-            for d in range(8):
-                nr, nc = r + d_row[d], c + d_col[d]
-                if (0 <= nr < rows and 0 <= nc < cols):
-                    lowest_neighbour = min(lowest_neighbour, dem[nr, nc])
-            if dem[r, c] < lowest_neighbour:
-                dem[r, c] = np.nextafter(lowest_neighbour, -np.inf)
-                
-            if dem[r, c] <= lowest_neighbour:
-                pits[r, c] = True
-    
-    while not pq.is_empty():
-        h, r, c = pq.pop()
-        if pits[r, c]:
-            cc = (r, c)
-            target_height = dem[r, c]
-
-            while (cc) != (-1, -1) and dem[cc[0], cc[1]] >= target_height:
-                dem[cc[0], cc[1]] = target_height
-                cc = tuple(backlinks[cc[0], cc[1], :])
-                target_height = np.nextafter(target_height, -np.inf)
-        
-        for d in range(8):
-            nr, nc = r + d_row[d], c + d_col[d]
-            if (0 <= nr < rows and 0 <= nc < cols and visited[nr, nc] == UNVISITED):
-                pq.insert((dem[nr, nc], nr, nc))
-                visited[nr, nc] = VISITED
-                backlinks[nr, nc, :] = r, c
-                flood.append((nr, nc))
-    
-    for nr, nc in flood:
-        pr, pc = backlinks[nr, nc, :]
-        if (pr, pc) != (-1, -1) and dem[nr, nc] <= dem[pr, pc]:
-            dem[nr, nc] = np.nextafter(dem[pr, pc], np.inf)
-        
-    return dem
-
-
-
-
 def fill_depressions(dem: np.ndarray) -> np.ndarray:
     """Алгоритм заполнения впадин ЦМР (priority flood)"""
     rows, cols = dem.shape
@@ -225,6 +167,122 @@ def fill_depressions(dem: np.ndarray) -> np.ndarray:
                     pq.insert((filled_dem[nr, nc], nr, nc))
                 processed[nr, nc] = True
     return filled_dem
+
+
+def breach_depressions_least_cost(dem: np.ndarray, max_dist=20,
+                                  max_cost=np.inf,
+                                  flat_increment=None) -> np.ndarray:
+    rows, cols = dem.shape
+    # Если инкремент не задан, то вычисляем его сами
+    if flat_increment is None or flat_increment == 0:
+        elev_range = np.max(dem) - np.min(dem)
+        small_num = 1.0 / (10 ** (9 - len(str(int(elev_range))))) * np.sqrt(2)
+    else:
+        small_num = flat_increment
+
+    output = dem.copy().astype(np.float64)
+
+    # Коэффициенты для просчёта весов
+    diag_dist = np.sqrt(2)
+    cost_dist = [1, diag_dist, 1, diag_dist, 1, diag_dist, 1, diag_dist]
+    pits = []
+
+    # Поиск ям
+    for row in range(1, rows-1):
+        for col in range(1, cols-1):
+            z = output[row, col]
+            is_pit = True
+            min_zn = np.inf
+            for d in range(8):
+                zn = output[row + d_row[d], col + d_col[d]]
+                if zn < z:
+                    is_pit = False
+                    break
+                if zn < min_zn:
+                    min_zn = zn
+            # Текущая ячейка - яма
+            if is_pit:
+                # поднимаем яму для лучшего просчета
+                output[row, col] = min_zn - small_num
+                pits.append((row, col, z))
+    # Сортируем ямы по высоте
+    pits.sort(key=lambda x: -x[2])
+    # Массивы для просчета пути (Алгоритм Дейкстры)
+    backlink = -np.ones((rows, cols), dtype=np.int8)
+    encountered = np.zeros((rows, cols), dtype=np.int8)
+    path_length = np.zeros((rows, cols), dtype=np.int16)
+
+    while pits:
+        row, col, z = pits.pop()
+
+        # Проверяем, была ли устранена текущая яма
+        is_still_pit = True
+        for d in range(8):
+            zn = output[row + d_row[d], col + d_col[d]]
+            if zn < z:
+                is_still_pit = False
+                break
+
+        if is_still_pit:
+            # Вычисляем стоимость пути
+            encountered[row, col] = 1
+            heap = []
+            heapq.heappush(heap, (0.0, row, col))
+            scanned_cells = [(row, col)]
+            found_solution = False
+
+            while heap and not found_solution:
+                accum, r, c = heapq.heappop(heap)
+                length = path_length[r, c]
+                zn = output[r, c]
+                cost1 = zn - z + length * small_num
+                for d in range(8):
+                    rn = r + d_row[d]
+                    cn = c + d_col[d]
+                        
+                    if (0 <= rn < rows and 0 <= cn < cols and 
+                        encountered[rn, cn] != 1):
+                            
+                        scanned_cells.append((rn, cn))
+                        length_n = length + 1
+                        path_length[rn, cn] = length_n
+                        backlink[rn, cn] = (d + 4) % 8
+                            
+                        zn = output[rn, cn]
+                        zout = z - (length_n * small_num)
+                            
+                        if zn > zout:
+                            cost2 = zn - zout
+                            new_cost = (accum + (cost1 + cost2)/2 *
+                                        cost_dist[d])
+                                
+                            encountered[rn, cn] = 1
+                            if length_n <= max_dist:
+                                heapq.heappush(heap, (new_cost, rn, cn))
+                        else:
+                            # Нашли точку перелива
+                            r_breach, c_breach = rn, cn
+                            while True:
+                                if backlink[r_breach, c_breach] > -1:
+                                    b = backlink[r_breach, c_breach]
+                                    r_breach += d_row[b]
+                                    c_breach += d_col[b]
+                                    zn = output[r_breach, c_breach]
+                                    length = path_length[r_breach, c_breach]
+                                    zout = z - (length * small_num)
+                                    if zn > zout:
+                                        output[r_breach, c_breach] = zout
+                                else:
+                                    break
+                            found_solution = True
+                            break
+                
+        # Возвращаем к первоначальному состоянию
+        for r, c in scanned_cells:
+            backlink[r, c] = -1
+            encountered[r, c] = 0
+            path_length[r, c] = 0
+    return output
 
 
 def calc_flow(dem: np.ndarray, cell_sz: float,
