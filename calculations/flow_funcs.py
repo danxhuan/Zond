@@ -67,6 +67,7 @@ class Heap():
 
 
 def breach_depressions_pit_cells(dem: np.ndarray, max_dist: int) -> np.ndarray:
+    """LEGACY METHOD DON'T USE!"""
     dem = dem.copy()  # Работаем с копией DEM
     rows, cols = dem.shape
 
@@ -134,6 +135,7 @@ def breach_depressions_pit_cells(dem: np.ndarray, max_dist: int) -> np.ndarray:
 
     return dem
 
+
 def fill_depressions(dem: np.ndarray) -> np.ndarray:
     """Алгоритм заполнения впадин ЦМР (priority flood)"""
     rows, cols = dem.shape
@@ -183,7 +185,7 @@ def breach_depressions_least_cost(dem: np.ndarray, max_dist=20,
     nodata = np.nan
     minimize_dist = True
 
-    if flat_increment is None or flat_increment == 0:  # Yt
+    if flat_increment is None or flat_increment == 0: 
         elev_range = np.max(dem) - np.min(dem)
         small_num = 1.0 / (10 ** (9 - len(str(int(elev_range))))) * np.sqrt(2)
     else:
@@ -229,7 +231,7 @@ def breach_depressions_least_cost(dem: np.ndarray, max_dist=20,
     encountered = np.zeros((rows, cols), dtype=np.int8)
     path_length = np.zeros((rows, cols), dtype=np.int16)
         
-    # Отслеживание 
+    # Отслеживание
     num_solved = 0
     num_unsolved = 0
     unsolved_pits = []
@@ -283,7 +285,7 @@ def breach_depressions_least_cost(dem: np.ndarray, max_dist=20,
                             if length_n <= max_dist:
                                 heapq.heappush(heap, (new_cost, rn, cn))
                         else:
-                            # Found a cell to breach to
+                            # Нашли точку перелива
                             r_breach, c_breach = rn, cn
                             while True:
                                 if backlink[r_breach, c_breach] > -1:

@@ -3,6 +3,7 @@ import os
 sys.path.append('/'.join(os.path.abspath(__file__).split('/')[:-2]))
 from kml_scrapper.scrapper import get_kml_regions
 from calculations.flow import FlowCalc
+from calculations.landforms import LandformCalc
 
 # GLOBALS
 dem_path = '/home/egor/dev/IT/Zond/output_SRTMGL1.tif'
@@ -19,7 +20,6 @@ def routine(forced=True):
     successful = 0
     num = 0
     for entry in entries:
-
         entry_path = os.path.join(path, entry)
         if (os.path.isdir(entry_path)):
             continue
@@ -30,7 +30,11 @@ def routine(forced=True):
         print()
         print(f"Calculating for entry: {entry}")
         try:
+            # Здесь предпологается интерполяция отдельного снимка
             calc = FlowCalc(entry_path, cell_size)
+            calc.find_results()
+            calc.save_results()
+            calc = LandformCalc(entry_path, cell_size)
             calc.find_results()
             calc.save_results()
             successful += 1
