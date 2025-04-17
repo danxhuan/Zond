@@ -84,6 +84,7 @@ def find_geomorphons(dem: np.ndarray, cell_size: int, max_dist: float,
     """Find geomorphons for each DEM cell.
     Idea of geomorphons can be read from here
     https://www.researchgate.net/publication/264850233_Geomorphons_-_A_new_approach_to_classification_of_landforms
+    https://www.sciencedirect.com/science/article/abs/pii/S0169555X12005028?via%3Dihub
 
     Args:
         dem (np.ndarray): original DEM (cell values in meters)

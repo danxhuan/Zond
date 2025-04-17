@@ -146,6 +146,7 @@ def breach_depressions_pit_cells(dem: np.ndarray, max_dist: int) -> np.ndarray:
 
 def fill_depressions(dem: np.ndarray) -> np.ndarray:
     """Depression filling algorythm (priority-flood)
+    https://rbarnes.org/sci/2014_depressions.pdf
 
     Args:
         dem (np.ndarray): original DEM
@@ -197,6 +198,9 @@ def breach_depressions_least_cost(dem: np.ndarray, max_dist=20,
                                   max_cost: float = np.inf,
                                   flat_increment=None) -> np.ndarray:
     """Breach DEM depressions
+    https://instruct.uwo.ca/geog/380/restricted/Lindsay_Creed_HP.pdf
+    https://www.researchgate.net/publication/343775054_Pit-centric_depression_removal_methods
+    https://doi.org/10.1002/hyp.10648
 
     Args:
         dem (np.ndarray): original DEM
@@ -346,6 +350,9 @@ def breach_depressions_least_cost(dem: np.ndarray, max_dist=20,
 def calc_flow(dem: np.ndarray, cell_sz: float,
               exponent: float = 1.1) -> np.ndarray:
     """Calculate flow diractions using MFD-md
+    Got info from here
+    https://www.researchgate.net/publication/220650521_An_adaptive_approach_to_selecting_flow_partition_exponent_for_multiple_flow_direction_algorithm
+    https://penniur.upenn.edu/uploads/media/multi-flow-direction-algorithms-in-gis.original.pdf
 
     Args:
         dem (np.ndarray): original DEM (cell values in meters)
