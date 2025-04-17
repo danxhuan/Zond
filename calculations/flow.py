@@ -86,7 +86,7 @@ class FlowCalc:
                             self.cell_size)
         print("Calculating flow accumulation...")
         acc = fl.calc_flow_accumulation(breached, flow)
-        geo = extract_streams(acc, self.transform, self.crs)
+        geo = extract_streams(acc, self.transform)
         self.results = (filled_dem, flow, acc, breached, geo)
         print("Calculations are finished!")
 

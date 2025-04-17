@@ -24,7 +24,8 @@ PIT = 10
 
 CLASSES = [
     [FLAT, FLAT, FLAT, FOOTSLOPE, FOOTSLOPE, VALLEY, VALLEY, VALLEY, PIT],
-    [FLAT, FLAT, FOOTSLOPE, FOOTSLOPE, FOOTSLOPE, VALLEY, VALLEY, VALLEY, NODATA],
+    [FLAT, FLAT, FOOTSLOPE, FOOTSLOPE, FOOTSLOPE, VALLEY, VALLEY, VALLEY,
+     NODATA],
     [FLAT, SHOULDER, SLOPE, SLOPE, HOLLOW, HOLLOW, VALLEY, NODATA, NODATA],
     [SHOULDER, SHOULDER, SLOPE, SLOPE, SLOPE, HOLLOW, NODATA, NODATA, NODATA],
     [SHOULDER, SHOULDER, SPUR, SLOPE, SLOPE, NODATA, NODATA, NODATA, NODATA],
@@ -78,7 +79,8 @@ def slope_segment(geomorphon: int) -> int:
         return NODATA
 
 
-def find_geomorphons(dem: np.ndarray, cell_size: int, max_dist: float, max_angle: float) -> np.ndarray:
+def find_geomorphons(dem: np.ndarray, cell_size: int, max_dist: float,
+                     max_angle: float) -> np.ndarray:
     """Find geomorphons for each DEM cell.
     Idea of geomorphons can be read from here
     https://www.researchgate.net/publication/264850233_Geomorphons_-_A_new_approach_to_classification_of_landforms

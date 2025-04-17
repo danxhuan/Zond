@@ -5,6 +5,9 @@ SQRT = np.sqrt(2)
 d_row = [-1, -1, -1, 0, 1, 1, 1, 0]
 d_col = [-1, 0, 1, 1, 1, 0, -1, -1]
 
+# В алгоритмах используется и minheap, и maxheap,
+# поэтому используем собственную реализацию
+
 
 def left(a):
     return a * 2 + 1
@@ -40,9 +43,11 @@ class Heap():
 
     def heapify(self, pos):
         pr = pos
-        if (left(pos) < len(self.data) and self.prior(self.data[left(pos)], self.data[pos])):
+        if (left(pos) < len(self.data) and self.prior(self.data[left(pos)],
+                                                      self.data[pos])):
             pr = left(pos)
-        if (right(pos) < len(self.data) and self.prior(self.data[right(pos)], self.data[pr])):
+        if (right(pos) < len(self.data) and self.prior(self.data[right(pos)],
+                                                       self.data[pr])):
             pr = right(pos)
         if pos != pr:
             self.swap(pr, pos)
@@ -60,7 +65,7 @@ class Heap():
 
     def is_empty(self):
         return len(self.data) == 0
-    
+
     def clear(self):
         while not self.is_empty():
             self.pop()
@@ -88,7 +93,8 @@ def breach_depressions_pit_cells(dem: np.ndarray, max_dist: int) -> np.ndarray:
                 pits.append((i, j))
 
     for pit_x, pit_y in pits:
-        if not all(dem[pit_x, pit_y] <= dem[nx, ny] for nx, ny in get_neighbors(pit_x, pit_y)):
+        if (not all(dem[pit_x, pit_y] <= dem[nx, ny]
+                    for nx, ny in get_neighbors(pit_x, pit_y))):
             continue
         pit_elevation = dem[pit_x, pit_y]   
         cost = np.full(dem.shape, float('inf'), dtype=np.float64)
@@ -131,13 +137,22 @@ def breach_depressions_pit_cells(dem: np.ndarray, max_dist: int) -> np.ndarray:
             target_elevation = dem[x, y]
             for i, (px, py) in enumerate(breach_path[1:], 1):
                 dem[px, py] = min(dem[px, py],
-                                pit_elevation + (target_elevation - pit_elevation) * i / len(breach_path) * 0.00001)
+                                  pit_elevation +
+                                  (target_elevation - pit_elevation) * i
+                                  / len(breach_path) * 0.00001)
 
     return dem
 
 
 def fill_depressions(dem: np.ndarray) -> np.ndarray:
-    """Алгоритм заполнения впадин ЦМР (priority flood)"""
+    """Depression filling algorythm (priority-flood)
+
+    Args:
+        dem (np.ndarray): original DEM
+
+    Returns:
+        np.ndarray: Filled DEM
+    """
     rows, cols = dem.shape
     filled_dem = dem.copy()
     pq = Heap(True)
@@ -179,13 +194,25 @@ def get_distance(n):
 
 
 def breach_depressions_least_cost(dem: np.ndarray, max_dist=20,
-                                  max_cost=np.inf,
+                                  max_cost: float = np.inf,
                                   flat_increment=None) -> np.ndarray:
+    """Breach DEM depressions
+
+    Args:
+        dem (np.ndarray): original DEM
+        max_dist (int, optional): maximum search distance. Defaults to 20.
+        max_cost (float, optional): maximum path cost. Defaults to np.inf.
+        flat_increment (float, optional): how much to increment
+        flat along the way. Defaults to None.
+
+    Returns:
+        np.ndarray: breached DEM
+    """
     rows, cols = dem.shape
     nodata = np.nan
     minimize_dist = True
 
-    if flat_increment is None or flat_increment == 0: 
+    if flat_increment is None or flat_increment == 0:
         elev_range = np.max(dem) - np.min(dem)
         small_num = 1.0 / (10 ** (9 - len(str(int(elev_range))))) * np.sqrt(2)
     else:
@@ -203,7 +230,7 @@ def breach_depressions_least_cost(dem: np.ndarray, max_dist=20,
             z = output[row, col]
             if z == nodata:
                 continue
-                    
+
             # проверка на яму
             is_pit = True
             min_zn = np.inf
@@ -217,29 +244,28 @@ def breach_depressions_least_cost(dem: np.ndarray, max_dist=20,
                     break
                 if zn < min_zn:
                     min_zn = zn
-            
+
             if is_pit:
                 output[row, col] = min_zn - small_num
                 pits.append((row, col, z))
-        
+
     # Сортируем ямы
     pits.sort(key=lambda x: -x[2])
-    num_deps = len(pits)
-        
+
     # Инициализация массивов
     backlink = -np.ones((rows, cols), dtype=np.int8)
     encountered = np.zeros((rows, cols), dtype=np.int8)
     path_length = np.zeros((rows, cols), dtype=np.int16)
-        
+
     # Отслеживание
     num_solved = 0
     num_unsolved = 0
     unsolved_pits = []
-        
+
     # Обрабатываем каждую яму
     while pits:
         row, col, z = pits.pop()
-            
+
         # Проверка, сохранилась ли яма
         is_still_pit = True
         for n in range(8):
@@ -248,7 +274,7 @@ def breach_depressions_least_cost(dem: np.ndarray, max_dist=20,
                 is_still_pit = False
                 num_solved += 1
                 break
-            
+
         if is_still_pit:
             # Вычисляем стоимость пути
             encountered[row, col] = 1
@@ -256,6 +282,7 @@ def breach_depressions_least_cost(dem: np.ndarray, max_dist=20,
             heapq.heappush(heap, (0.0, row, col))
             scanned_cells = [(row, col)]
             found_solution = False
+            # Ищем путь минимальной стоимости
             while heap and not found_solution:
                 accum, r, c = heapq.heappop(heap)
                 if accum > max_cost:
@@ -268,19 +295,23 @@ def breach_depressions_least_cost(dem: np.ndarray, max_dist=20,
                 for n in range(8):
                     rn = r + dy[n]
                     cn = c + dx[n]
-                    if (0 <= rn < rows and 0 <= cn < cols and encountered[rn, cn] != 1 and output[rn, cn] != nodata):
+                    if (0 <= rn < rows and 0 <= cn < cols and
+                       encountered[rn, cn] != 1 and output[rn, cn] != nodata):
+
                         scanned_cells.append((rn, cn))
                         length_n = length + 1
                         path_length[rn, cn] = length_n
                         backlink[rn, cn] = (n + 4) % 8
-                            
+
                         zn = output[rn, cn]
                         zout = z - (length_n * small_num)
-                            
+
                         if zn > zout:
                             cost2 = zn - zout
-                            new_cost = (accum + (cost1 + cost2)/2 * cost_dist[n] if minimize_dist else accum + cost2)
-                                
+                            new_cost = (accum + (cost1 + cost2)/2
+                                        * cost_dist[n]
+                                        if minimize_dist else accum + cost2)
+
                             encountered[rn, cn] = 1
                             if length_n <= max_dist:
                                 heapq.heappush(heap, (new_cost, rn, cn))
@@ -299,11 +330,11 @@ def breach_depressions_least_cost(dem: np.ndarray, max_dist=20,
                                         output[r_breach, c_breach] = zout
                                 else:
                                     break
-                            
+
                             num_solved += 1
                             found_solution = True
                             break
-                
+
         # Востанавливаем начальные условия
         for r, c in scanned_cells:
             backlink[r, c] = -1
@@ -314,17 +345,29 @@ def breach_depressions_least_cost(dem: np.ndarray, max_dist=20,
 
 def calc_flow(dem: np.ndarray, cell_sz: float,
               exponent: float = 1.1) -> np.ndarray:
-    """Вычисление направлений потока алгоритмом MFD-md"""
+    """Calculate flow diractions using MFD-md
+
+    Args:
+        dem (np.ndarray): original DEM (cell values in meters)
+        cell_sz (float): size of original DEM (in meters)
+        exponent (float, optional): modifier. Defaults to 1.1.
+
+    Returns:
+        np.ndarray: matrix of flow in 8 directions for each cell
+    """
     rows, cols = dem.shape
     flow = np.zeros((rows, cols, 8))
     slopes = np.zeros((rows, cols, 8))
     for r in range(1, rows - 1):
         for c in range(1, cols - 1):
             z0: np.float64 = dem[r, c]  # Высота тек. клетки
-            total_weight: np.float64 = np.float64(0)  # Общий вес по направлениям для нормировки
+            total_weight: np.float64 = np.float64(0)  # Общий вес по
+#                                                   направлениям для нормировки
+
             for d in range(8):  # Перебираем все доступные направления
                 nr, nc = r + d_row[d], c + d_col[d]
-                dz: np.float64 = z0 - dem[nr, nc]  # Перепад высот по направлению
+                dz: np.float64 = z0 - dem[nr, nc]  # Перепад высот
+#                                                    по направлению
                 if dz > 0:  # Условие потока в заданном направлении
                     distance = cell_sz if d % 2 == 1 else cell_sz * SQRT
                     slopes[r, c, d] = np.float64(np.power(dz / distance,
@@ -337,7 +380,15 @@ def calc_flow(dem: np.ndarray, cell_sz: float,
 
 
 def calc_flow_accumulation(dem: np.ndarray, flow: np.ndarray) -> np.ndarray:
-    """Алгоритм вычисления накопления потока"""
+    """Calculate flow accumulation along found directions
+
+    Args:
+        dem (np.ndarray): original DEM
+        flow (np.ndarray): flow matrix
+
+    Returns:
+        np.ndarray: accumulation mask for DEM
+    """
     rows, cols = dem.shape
     # Изначально в каждой клетке есть единица воды
     accumulation = np.ones((rows, cols))
@@ -359,11 +410,3 @@ def calc_flow_accumulation(dem: np.ndarray, flow: np.ndarray) -> np.ndarray:
         accumulation[r, c] += s
 
     return accumulation
-
-
-def get_streams(accumulation: np.ndarray, quantile: float) -> np.ndarray:
-    """Исключаем данные по заданному квантилю"""
-    threshold = np.float64(np.quantile(accumulation, quantile))
-    streams: np.ndarray = np.where(accumulation > threshold,
-                                               accumulation, 0)
-    return streams

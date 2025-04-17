@@ -1,5 +1,4 @@
 import os
-import json
 import rasterio
 from rasterio.enums import ColorInterp
 import numpy as np
