@@ -1,9 +1,8 @@
 from django.db import models
 
+# Здесь тоже поменять
 
-class Zone(models.Model):
-    matrix_path = models.FilePathField()
-    time_update = models.DateTimeField()
-    interpolation = models.BooleanField()
-    watercourses = models.BooleanField()
-    relief = models.BooleanField()
+class Region(models.Model):
+    Matrix = models.CharField(max_length=255)
+    Date_of_update = models.DateField()
+    Processed = models.BooleanField()
