@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <Placemark>
+      <name>К-18-1929</name>
+      <Style id="bd7474ab-17c8-403c-bd1d-e138c2e6c216">
+        <LineStyle>
+          <color>ff000000</color>
+          <width>1</width>
+        </LineStyle>
+        <PolyStyle>
+          <color>ff6150ff</color>
+          <colorMode>normal</colorMode>
+        </PolyStyle>
+      </Style>
+      <Polygon>
+        <outerBoundaryIs>
+          <LinearRing>
+            <coordinates>40.107731575000003,45.373242519999998
+40.107693908000002,45.370837065000003
+40.093799638,45.371159104
+40.093445709999997,45.379648275000001
+40.107698651,45.379654911000003
+40.107731575000003,45.373242519999998</coordinates>
+          </LinearRing>
+        </outerBoundaryIs>
+      </Polygon>
+    </Placemark>
+  </Document>
+</kml>

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <Placemark>
+      <name>Ю-12-1425</name>
+      <Style id="65b437df-a474-4fa5-8776-0ecde4b1a3ec">
+        <LineStyle>
+          <color>ff000000</color>
+          <width>1</width>
+        </LineStyle>
+        <PolyStyle>
+          <color>ffbaa158</color>
+          <colorMode>normal</colorMode>
+        </PolyStyle>
+      </Style>
+      <Polygon>
+        <outerBoundaryIs>
+          <LinearRing>
+            <coordinates>39.930235645000003,45.145819459999998
+39.937609823000003,45.143177893000001
+39.937491647000002,45.143003458000003
+39.937139305000002,45.142997690999998
+39.936625278999998,45.142288737000001
+39.933415263999997,45.137432521000001
+39.933406720000001,45.137192665000001
+39.933511914,45.137166860999997
+39.928014976999997,45.129143479
+39.927804115999997,45.129121013999999
+39.918691967000001,45.132493326999999
+39.928247136000003,45.146521581999998
+39.930235645000003,45.145819459999998</coordinates>
+          </LinearRing>
+        </outerBoundaryIs>
+      </Polygon>
+    </Placemark>
+  </Document>
+</kml>

@@ -1,7 +1,6 @@
 *cache*
 *test*
 *.so*
-*.tif*
 build
 venv*.log
 *.pot
@@ -16,4 +15,3 @@ media
 Dockerfile
 .idea
 venv
-*.kml*
