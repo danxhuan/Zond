@@ -82,13 +82,11 @@ WSGI_APPLICATION = "djserver.wsgi.application"
 # Тут поменял на настройки для PostgreSQL
 DATABASES = {
     'default': {
-        # Меняем настройку Django: теперь для работы будет использоваться
-        # бэкенд postgresql
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('POSTGRES_DB', 'django'),
-        'USER': os.getenv('POSTGRES_USER', 'django'),
-        'PASSWORD': os.getenv('POSTGRES_PASSWORD', ''),
-        'HOST': os.getenv('DB_HOST', ''),
+        'NAME': os.getenv('POSTGRES_DB', 'terrain_db'),
+        'USER': os.getenv('POSTGRES_USER', 'terrain_user'),
+        'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'terrain_password'),
+        'HOST': os.getenv('DB_HOST', 'db'),
         'PORT': os.getenv('DB_PORT', 5432),
     }
 }
