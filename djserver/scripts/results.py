@@ -80,28 +80,26 @@ def register_kml_files():
     try:
         conn = psycopg2.connect(**DB_CONFIG)
         with conn.cursor() as cur:
-            # Получаем список базовых TIF файлов
-            base_tifs = list(TIF_REGIONS_DIR.glob('*.tif'))
+            # Получаем список базовых TIF файлов, отсортированных по времени создания (новые сначала)
+            base_tifs = sorted(TIF_REGIONS_DIR.glob('*.tif'), key=lambda f: f.stat().st_ctime, reverse=True)
             if not base_tifs:
                 raise Exception("Не найдены базовые TIF файлы в папке tif_regions_for_scrapper")
             
-            # Регистрируем каждый KML с соответствующим TIF
+            # Регистрируем каждый KML с последним добавленным TIF
             for kml_file in RAW_FILES_DIR.glob('*.kml'):
-                # Находим подходящий TIF (можно улучшить логику сопоставления)
-                # Тут 100% нужно как-нибудь оптимизировать. Мб отдельную папку добавлять для каждого
-                # tif файла или еще что-нибудь
-                base_tif = base_tifs[0]  # Упрощение - берем первый подходящий
+                # Берем самый новый TIF файл (первый в отсортированном списке)
+                latest_tif = base_tifs[0]
                 
                 cur.execute("""
                     INSERT INTO terrain_regions (source_path, base_tif_path, is_processed)
                     VALUES (%s, %s, FALSE)
                     ON CONFLICT (source_path) DO NOTHING
                     RETURNING id;
-                """, (str(kml_file), str(base_tif)))
+                """, (str(kml_file), str(latest_tif)))
                 
                 if cur.rowcount > 0:
                     file_id = cur.fetchone()[0]
-                    print(f"Зарегистрирован KML: {kml_file} с TIF: {base_tif} (ID: {file_id})")
+                    print(f"Зарегистрирован KML: {kml_file} с TIF: {latest_tif} (ID: {file_id})")
                 
             conn.commit()
     except Exception as e:
