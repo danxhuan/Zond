@@ -60,7 +60,7 @@ ROOT_URLCONF = "djserver.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR / 'templates'],
+        "DIRS": [BASE_DIR / 'djserver/mainside/templates'],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -79,14 +79,13 @@ WSGI_APPLICATION = "djserver.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-# Тут поменял на настройки для PostgreSQL
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': os.getenv('POSTGRES_DB', 'terrain_db'),
         'USER': os.getenv('POSTGRES_USER', 'terrain_user'),
         'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'terrain_password'),
-        'HOST': os.getenv('DB_HOST', 'db'),
+        'HOST': os.getenv('DB_HOST', 'localhost'),
         'PORT': os.getenv('DB_PORT', 5432),
     }
 }
