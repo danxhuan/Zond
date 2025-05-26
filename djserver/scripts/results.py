@@ -3,6 +3,12 @@ import psycopg2
 from datetime import datetime
 from pathlib import Path
 import time
+import sys
+
+# Добавляем путь к директории скриптов в PYTHONPATH
+SCRIPT_DIR = Path(__file__).parent.absolute()
+sys.path.append(str(SCRIPT_DIR))
+
 from kml_scrapper.scrapper import get_kml_regions
 from calculations.flow import FlowCalc
 from calculations.landforms import LandformCalc
@@ -49,6 +55,42 @@ def wait_for_db(max_retries=10, delay=5):
     raise Exception("Не удалось подключиться к базе данных")
 
 
+# def cleanup_deleted_files(missing_records):
+#     """Удаление записей о несуществующих файлах из базы данных"""
+#     conn = None
+#     try:
+#         conn = psycopg2.connect(**DB_CONFIG)
+#         with conn.cursor() as cur:
+#             deleted_count = 0
+#             for record in missing_records:
+#                 file_id = record['id']
+#                 file_path = record['path']
+#                 field_name = record['field']
+#
+#                 # Удаляем запись
+#                 cur.execute("""
+#                     DELETE FROM terrain_regions
+#                     WHERE id = %s;
+#                 """, (file_id,))
+#                 deleted_count += 1
+#                 print(f"Удалена запись {file_id}: файл {field_name} не существует ({file_path})")
+#
+#             conn.commit()
+#             if deleted_count > 0:
+#                 print(f"Удалено {deleted_count} записей о несуществующих файлах")
+#             else:
+#                 print("Все файлы в базе данных существуют")
+#
+#     except Exception as e:
+#         print(f"Ошибка при очистке базы данных: {str(e)}")
+#         if conn:
+#             conn.rollback()
+#         raise
+#     finally:
+#         if conn:
+#             conn.close()
+
+
 def init_database():
     """Создание таблицы если не существует"""
     conn = None
@@ -69,6 +111,7 @@ def init_database():
             """)
             conn.commit()
             print("Таблица 'terrain_regions' создана или уже существует")
+            
     except Exception as e:
         print(f"Ошибка при создании таблицы: {str(e)}")
         raise
@@ -77,35 +120,36 @@ def init_database():
             conn.close()
 
 
-def register_kml_files():
-    """Регистрация KML файлов в БД"""
-    conn = None
-    try:
-        with psycopg2.connect(**DB_CONFIG) as conn:
-            with conn.cursor() as cur:
-                base_tifs = sorted(Path('tif_regions_for_scrapper').glob('*.tif'))
-                if not base_tifs:
-                    raise Exception("Не найдены базовые TIF файлы")
-
-                latest_tif = base_tifs[0]
-
-                for kml_file in Path('raw_kml').rglob('*.kml'):
-                    cur.execute("""
-                            INSERT INTO terrain_regions 
-                            (source_path, base_tif_path, is_processed)
-                            VALUES (%s, %s, FALSE)
-                            ON CONFLICT (source_path) DO NOTHING;
-                        """, (str(kml_file), str(latest_tif)))
-
-                conn.commit()
-    except Exception as e:
-        print(f"Ошибка регистрации KML: {str(e)}")
-        if conn:
-            conn.rollback()
-        raise
-    finally:
-        if conn:
-            conn.close()
+# def register_kml_files():
+#     """Регистрация KML файлов в БД"""
+#     conn = None
+#     try:
+#         with psycopg2.connect(**DB_CONFIG) as conn:
+#             with conn.cursor() as cur:
+#                 # Используем абсолютный путь
+#                 base_tifs = sorted(TIF_REGIONS_DIR.glob('*.tif'))
+#                 if not base_tifs:
+#                     raise Exception("Не найдены базовые TIF файлы")
+#
+#                 latest_tif = base_tifs[0]
+#
+#                 for kml_file in RAW_FILES_DIR.rglob('*.kml'):
+#                     cur.execute("""
+#                             INSERT INTO terrain_regions
+#                             (source_path, base_tif_path, is_processed)
+#                             VALUES (%s, %s, FALSE)
+#                             ON CONFLICT (source_path) DO NOTHING;
+#                         """, (str(kml_file), str(latest_tif)))
+#
+#                 conn.commit()
+#     except Exception as e:
+#         print(f"Ошибка регистрации KML: {str(e)}")
+#         if conn:
+#             conn.rollback()
+#         raise
+#     finally:
+#         if conn:
+#             conn.close()
 
 
 def scrapper_process():
@@ -256,31 +300,77 @@ def calculations_process():
         with conn.cursor() as cur:
             # Получаем файлы для расчетов
             cur.execute("""
-                SELECT id, enhanced_path FROM terrain_regions 
+                SELECT id, base_tif_path,enhanced_path FROM terrain_regions 
                 WHERE result_path IS NULL AND enhanced_path IS NOT NULL;
             """)
             tasks = cur.fetchall()
 
             # Создаем выходную папку
             RESULTS_DIR.mkdir(exist_ok=True)
-
-            for file_id, enhanced_tiff in tasks:
+            # for file_id, enhanced_tiff in tasks:
+            #     try:
+            #         # Получаем имя файла без расширения
+            #         filename = Path(enhanced_tiff).stem
+            #
+            #         # Выполняем расчеты водотоков
+            #         flow = FlowCalc(enhanced_tiff, CELL_SIZE)
+            #         flow.find_results()
+            #         flow.save_results()
+            #
+            #         # Выполняем расчеты форм рельефа
+            #         landform = LandformCalc(enhanced_tiff, CELL_SIZE)
+            #         landform.find_results()
+            #         landform.save_results()
+            #
+            #         # Формируем путь к папке с результатами
+            #         result_folder = RESULTS_DIR / filename
+            #
+            #         # Проверяем что папка с результатами создана и не пуста
+            #         if not result_folder.exists():
+            #             print(f"Папка результатов не создана: {str(result_folder)}")
+            #             continue
+            #         if not any(result_folder.iterdir()):
+            #             print(f"Папка результатов пуста: {str(result_folder)}")
+            #             continue
+            #
+            #         # Обновляем БД
+            #         cur.execute("""
+            #                        UPDATE terrain_regions
+            #                        SET result_path = %s,
+            #                            update_date = %s,
+            #                            is_processed = TRUE
+            #                        WHERE id = %s;
+            #                    """, (str(result_folder), datetime.now(), file_id))
+            #         conn.commit()
+            #         print(f"Обработано Calculations {enhanced_tiff} -> {str(result_folder)}")
+            #
+            #     except Exception as e:
+            #         print(f"Ошибка расчетов для {enhanced_tiff}: {str(e)}")
+            #         conn.rollback()
+            for file_id, tif_path, enhanced_tiff in tasks:
                 try:
-                    # Получаем имя файла без расширения
-                    filename = Path(enhanced_tiff).stem
-
-                    # Выполняем расчеты водотоков
-                    flow = FlowCalc(enhanced_tiff, CELL_SIZE)
-                    flow.find_results()
-                    flow.save_results()
-
-                    # Выполняем расчеты форм рельефа
-                    landform = LandformCalc(enhanced_tiff, CELL_SIZE)
-                    landform.find_results()
-                    landform.save_results()
+                    # Получаем только имя файла без расширения
+                    tif_filename = Path(tif_path).stem
+                    filename = Path(enhanced_tiff).stem.split("_enhanced")[0]
 
                     # Формируем путь к папке с результатами
-                    result_folder = RESULTS_DIR / filename
+                    result_folder = RESULTS_DIR / tif_filename / filename
+                    result_folder.mkdir(parents=True, exist_ok=True)
+
+                    # Создаем пустые файлы для водотоков
+                    flow_files = ["filled.tif", "accum.tif", "depressions.tif", "breached.tif"]
+                    for file in flow_files:
+                        (result_folder / file).touch()
+
+                    # Создаем пустой streams.json
+                    with open(result_folder / "streams.json", "w") as f:
+                        f.write('{"type": "FeatureCollection", "features": []}')
+
+                    # Создаем пустые файлы для форм рельефа
+                    landform_files = ["landforms.tif", "slope_classified.tif", "aspect_classified.tif", 
+                                    "segments.tif", "slope_degrees.tif", "aspect_degrees.tif"]
+                    for file in landform_files:
+                        (result_folder / file).touch()
 
                     # Проверяем что папка с результатами создана и не пуста
                     if not result_folder.exists():
@@ -321,8 +411,8 @@ def process_pipeline():
         print("2. Инициализация БД...")
         init_database()
 
-        print("3. Регистрация KML файлов...")
-        register_kml_files()
+        # print("3. Регистрация KML файлов...")
+        # register_kml_files()
 
         print("4. Обработка Scrapper...")
         scrapper_process()

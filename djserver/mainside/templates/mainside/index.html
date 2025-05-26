@@ -82,7 +82,7 @@
                     <div class="upload-container">
                         <h2 class="upload-title">Загрузка геоданных</h2>
 
-                        <<!-- В форме загрузки добавьте проверку перед отправкой -->
+                        <!-- В форме загрузки добавьте проверку перед отправкой -->
                         <form method="post" enctype="multipart/form-data" action="{% url 'upload_all' %}"
                               onsubmit="return validateFiles()" class="upload-form">
                             {% csrf_token %}
