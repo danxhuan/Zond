@@ -8,22 +8,19 @@ function loadRegionsList() {
             listDiv.innerHTML = '';
             data.regions.forEach(region => {
                 const label = document.createElement('label');
-                label.style.display = 'block';
-                label.style.marginBottom = '10px';
-                label.style.color = '#222';
-                label.style.fontSize = '1.08rem';
+                label.className = 'region-label';
                 label.innerHTML = `<input type=\"checkbox\" name=\"region\" value=\"${region}\"> ${region}`;
                 listDiv.appendChild(label);
             });
         });
 }
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     loadRegionsList();
     // Поиск по регионам
     const searchInput = document.getElementById('search-region');
     if (searchInput) {
-        searchInput.addEventListener('input', function() {
+        searchInput.addEventListener('input', function () {
             const search = this.value.toLowerCase();
             document.querySelectorAll('#regions-list label').forEach(label => {
                 label.style.display = label.textContent.toLowerCase().includes(search) ? '' : 'none';
@@ -33,7 +30,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Обработка отправки формы скачивания выбранных регионов
     const downloadForm = document.getElementById('download-form');
     if (downloadForm) {
-        downloadForm.addEventListener('submit', function(e) {
+        downloadForm.addEventListener('submit', function (e) {
             e.preventDefault();
             const checked = Array.from(document.querySelectorAll('input[name=\"region\"]:checked')).map(cb => cb.value);
             if (checked.length === 0) {
@@ -45,16 +42,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({regions: checked})
             })
-            .then(response => response.blob())
-            .then(blob => {
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = "selected_results.zip";
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
-            });
+                .then(response => response.blob())
+                .then(blob => {
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = "selected_results.zip";
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                });
         });
     }
 });
@@ -69,8 +66,7 @@ function handleFormSubmit(event) {
     const uploadBtn = document.getElementById('upload-btn');
     // Отключаем и делаем кнопку серой во время обработки
     uploadBtn.disabled = true;
-    uploadBtn.style.background = '#aaa';
-    // Показываем индикатор обработки
+    uploadBtn.classList.add('button--disabled');    // Показываем индикатор обработки
     document.getElementById('processing-indicator').style.display = 'block';
     document.getElementById('download-section').style.display = 'none';
     // Отправляем форму через AJAX
@@ -81,28 +77,28 @@ function handleFormSubmit(event) {
             'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
         }
     })
-    .then(response => response.json())
-    .then(data => {
-        form.reset(); // Очищаем поля после отправки
-        if (data.status === 'processing') {
-            pollProcessingStatus(data.session_id);
-        } else if (data.status === 'error') {
-            alert(data.message);
+        .then(response => response.json())
+        .then(data => {
+            form.reset(); // Очищаем поля после отправки
+            if (data.status === 'processing') {
+                pollProcessingStatus(data.session_id);
+            } else if (data.status === 'error') {
+                alert(data.message);
+                document.getElementById('processing-indicator').style.display = 'none';
+                // Включаем кнопку при ошибке
+                uploadBtn.disabled = false;
+                uploadBtn.style.background = '#43a047';
+            }
+        })
+        .catch(error => {
+            form.reset(); // Очищаем поля даже при ошибке
+            console.error('Error:', error);
+            alert('Произошла ошибка при отправке формы');
             document.getElementById('processing-indicator').style.display = 'none';
             // Включаем кнопку при ошибке
             uploadBtn.disabled = false;
-            uploadBtn.style.background = '#43a047';
-        }
-    })
-    .catch(error => {
-        form.reset(); // Очищаем поля даже при ошибке
-        console.error('Error:', error);
-        alert('Произошла ошибка при отправке формы');
-        document.getElementById('processing-indicator').style.display = 'none';
-        // Включаем кнопку при ошибке
-        uploadBtn.disabled = false;
-        uploadBtn.style.background = '#43a047';
-    });
+            uploadBtn.classList.remove('button--disabled');
+        });
     return false;
 }
 

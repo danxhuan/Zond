@@ -7,20 +7,23 @@
     padding: 32px 32px 24px 32px;
     min-width: 380px;
     max-width: 480px;
-    box-shadow: 0 2px 16px rgba(0,0,0,0.10);
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.10);
     margin: 40px 0 0 0;
 }
+
 .results-list-section h2 {
     margin-bottom: 18px;
     color: #222;
     font-size: 2.1rem;
     font-weight: 800;
 }
+
 .results-list-section > div {
     font-size: 15px;
     color: #444;
     margin-bottom: 12px;
 }
+
 #search-region {
     width: 100%;
     margin-bottom: 16px;
@@ -31,6 +34,7 @@
     background: #f8f8f8;
     font-size: 1rem;
 }
+
 #regions-list {
     max-height: 260px;
     overflow-y: auto;
@@ -40,6 +44,7 @@
     flex-direction: column;
     gap: 6px;
 }
+
 #regions-list label {
     display: block;
     color: #222;
@@ -48,107 +53,373 @@
     font-weight: 500;
     cursor: pointer;
 }
-.download-btn {
-    width: 100%;
-    background: #2196f3;
-    color: #fff;
-    border: none;
-    border-radius: 8px;
-    padding: 13px 0;
-    font-weight: bold;
-    font-size: 1.1rem;
-}
+
+
+
 .upload-section {
     margin-top: 32px;
 }
+
 .upload-container {
     background: #222c;
     border-radius: 12px;
     padding: 24px;
 }
+
 .upload-title {
     color: #fff;
     text-align: center;
     margin-bottom: 18px;
 }
+
 .file-upload-label {
     color: #fff;
 }
-.upload-button {
-    width: 100%;
-    background: #43a047;
-    color: #fff;
-    border: none;
-    border-radius: 8px;
-    padding: 13px 0;
-    font-weight: bold;
-    font-size: 1.1rem;
-    margin-top: 12px;
-}
+
+/*.upload-button {*/
+/*    width: 100%;*/
+/*    background: #43a047;*/
+/*    color: #fff;*/
+/*    border: none;*/
+/*    border-radius: 8px;*/
+/*    padding: 1em 2.2em;*/
+/*    font-weight: bold;*/
+/*    font-size: 1.1rem;*/
+/*    margin-top: 12px;*/
+/*}*/
+
 #processing-indicator {
     display: none;
     margin-top: 12px;
     text-align: center;
 }
+
 #processing-indicator .fa-spinner {
     color: #2196f3;
     font-size: 24px;
 }
+
 #processing-status {
     color: #fff;
     margin-top: 8px;
 }
-#download-section {
-    display: none;
-}
-#download-section .download-btn {
-    display: block;
-    margin-top: 12px;
-    text-align: center;
-    color: #2196f3;
-    font-weight: bold;
-}
+
+
+
 #loading-overlay {
     display: none;
     position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.8);
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
     z-index: 9999;
     justify-content: center;
     align-items: center;
 }
+
 #loading-overlay > div {
     text-align: center;
     color: white;
 }
+
 #loading-overlay .fa-spinner {
     font-size: 48px;
     margin-bottom: 20px;
 }
+
 #loading-overlay h2 {
     margin-bottom: 10px;
 }
+
 .map-slide {
     display: flex;
     justify-content: center;
     align-items: flex-start;
     min-height: 600px;
 }
+
 .download-link {
-    display: block;
-    margin-top: 12px;
-    text-align: center;
-    color: #2196f3;
-    font-weight: bold;
-    background: none;
-    border: none;
-    font-size: 1.1rem;
-    padding: 0;
-    cursor: pointer;
-    text-decoration: underline;
-    transition: color 0.2s;
+    display:inline-flex;
+    text-decoration: none;
+    align-items:center;
+    gap:10px;
+    font-size:1.05em;
+    padding: 1em 2.2em;
+    border-radius:15px;
+    font-weight:600;
+    cursor:pointer;
+    position:relative;
+    overflow:hidden;
+
+    color:var(--white-color);
+    background:rgba(76,175,80,.9);   /* ← зелёная заливка */
+    border:none;
+    transition:all .4s cubic-bezier(.4,0,.2,1);
+    box-shadow:0 4px 15px rgba(76,175,80,.3);
 }
-.download-link:hover {
-    color: #1769aa;
-    text-decoration: underline;
-} 
+.download-link::before{ /* тот же “блик” */
+    content:'';
+    position:absolute;
+    inset:0;
+    left:-100%;
+    opacity: 0;
+    background:linear-gradient(120deg,transparent,rgba(255,255,255,.25),transparent);
+    transition:.5s ease;
+}
+.download-link:hover{
+    transform:translateY(-3px);
+    background:rgba(76,175,80,1);
+    box-shadow:0 8px 25px rgba(76,175,80,.4);
+}
+.download-link:hover::before{
+    left:100%;
+    opacity: 1;
+}
+.download-link[disabled]{
+    left: 100%;
+    opacity:1;cursor:not-allowed;transform:none;box-shadow:none;
+}
+/* === «Выберите из доступных» / results-list-section ======================= */
+.results-list-section {
+    /* визуальная единообразность с upload-container */
+    background: rgba(25, 26, 26, .75);
+    border: 1px solid rgba(255, 255, 255, .08);
+    border-radius: 20px;
+    backdrop-filter: blur(12px);
+    padding: 2.5em 2em;
+    box-shadow: 0 8px 35px rgba(0, 0, 0, .35);
+
+    /* геометрия */
+    max-width: 480px;
+    width: 100%;
+    margin: 40px auto 0;
+    color: var(--white-color);
+}
+
+.results-list-section h2 {
+    font-size: 2rem;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 1.5em;
+    color: var(--white-color);
+}
+
+/* ——— Поиск ——— */
+#search-region {
+    background: rgba(255, 255, 255, .05);
+    border: 1px solid rgba(255, 255, 255, .25);
+    border-radius: 12px;
+    padding: .9em 1em;
+    font-size: 1rem;
+    color: var(--white-color);
+    transition: .25s;
+}
+
+#search-region:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--green-color);
+}
+
+/* ——— Список регионов ——— */
+#regions-list {
+    max-height: 260px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: .6em;
+    margin-bottom: 1.8em;
+}
+
+#regions-list label {
+    display: flex;
+    align-items: center;
+    gap: .6em;
+    cursor: pointer;
+    font-weight: 500;
+    transition: color .2s;
+}
+
+#regions-list input[type=checkbox] {
+    accent-color: var(--green-color); /* поддержка современных браузеров */
+    width: 18px;
+    height: 18px;
+}
+
+#regions-list label:hover {
+    color: var(--green-color);
+}
+
+/* ——— Кнопка «Скачать выбранные» ——— */
+/*.download-btn {*/
+/*    background: transparent;*/
+/*    border: 2px solid var(--green-color);*/
+/*    border-radius: 15px;*/
+/*    padding: 1em 0;*/
+/*    font-weight: 600;*/
+/*    font-size: 1.05rem;*/
+/*    color: var(--white-color);*/
+/*    transition: .35s;*/
+/*    width: 100%;*/
+/*}*/
+
+/*.download-btn:hover {*/
+/*    background: var(--green-color);*/
+/*    transform: translateY(-3px);*/
+/*    box-shadow: 0 8px 25px rgba(76, 175, 80, .4);*/
+/*}*/
+
+/* === Layout: upload-block + regions-block на одной линии =================== */
+.map-slide{
+    display:flex;
+    flex-direction:column;    /* ↓ вертикальная колонка */
+    align-items:center;       /* по центру по горизонтали */
+    gap:2rem;
+    width:100%;
+    margin:0 auto;            /* центр относительно окна */
+}
+
+/*  — десктоп ≥ 880 px: превращаемся в строку — */
+@media (min-width:880px){
+    .map-slide{
+        flex-direction:row;   /* → горизонтальный ряд  */
+        justify-content:center;
+        align-items: center;
+        /* ВЕРХНИЕ КРАЯ в одну линию */
+        width:max-content;       /* ширина = сумма карточек + gap */
+    }
+}
+
+.results-list-section,
+.upload-container{
+    /* убираем внешние отступы, чтобы ничто не «подталкивало» вниз */
+    margin:0 !important;
+}
+
+/* фиксируем одинаковую ширину только на широких экранах */
+@media (min-width:880px){
+    .results-list-section,
+    .upload-container{
+        flex:0 0 440px;   /* строгие 440 px, не растут-не сжимаются */
+        max-width:440px;
+    }
+}
+    /* === Белый “мелкий” текст во всех подписи / <small> ====================== */
+    .results-list-section small,
+    .upload-container small,
+    .results-list-section .file-info,
+    .upload-container .file-info {
+        color: #fff !important;
+        opacity: 0.95;
+    }
+
+
+    /* === 2. Тёмный фон + белый текст у списка регионов ========================= */
+    /* —————————————————————————————————————————————————————
+ *  Левый блок (“Выберите из доступных”) → как правый
+ * ————————————————————————————————————————————————————— */
+.results-list-section{
+    /* фон, границы и геом. параметры — идентичны upload-container */
+    background:#222c;                               /* тот же rgba(34,34,44,.75) */
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:12px;
+    padding:24px;                                   /* одинаковый внутренний отступ */
+    box-shadow:0 8px 35px rgba(0,0,0,.35);
+
+    /* цвет шрифта */
+    color:#fff;
+}
+
+/* заголовок в том же стиле, что и .upload-title */
+.results-list-section h2{
+    color:#fff;
+    font-size:1.6rem;       /* чтобы визуально совпало с правым */
+    font-weight:700;
+    text-align:center;
+    margin-bottom:18px;
+}
+
+/* мелкий текст / подписи — белый */
+.results-list-section > div,
+.results-list-section small{
+    color:#fff;
+    opacity:.95;
+}
+/*--------------------------------------*/
+#regions-list {
+    max-height: 260px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: .7em;
+}
+
+#regions-list label {
+    display: flex;
+    align-items: center;
+    gap: .7em;
+    font-weight: 500;
+    cursor: pointer;
+    color: var(--white-color);          /* белые подписи */
+    transition: color .2s;
+}
+
+#regions-list label:hover { color: var(--green-color); }
+
+#regions-list img {                     /* фиксируем размер флага */
+    width: 28px;
+    height: auto;
+    flex: 0 0 28px;
+    border-radius: 4px;
+}
+
+#regions-list input[type="checkbox"] {
+    accent-color: var(--green-color);
+    width: 20px;
+    height: 20px;
+}
+
+/* ——— Кнопка «Скачать» = .upload-button ——— */
+.download-btn{
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.05em;
+    padding: 1em 2.2em;
+    border-radius: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    color: var(--white-color);
+    background: rgba(76,175,80,.9);
+    border: none;
+    transition: all .35s cubic-bezier(.4,0,.2,1);
+    box-shadow: 0 4px 15px rgba(76,175,80,.3);
+}
+
+.download-btn::before{
+    content:'';
+    position:absolute;
+    inset:0;
+    left:-100%;
+    background:linear-gradient(120deg,transparent,rgba(255,255,255,.25),transparent);
+    transition:.5s ease;
+}
+
+.download-btn:hover{
+    transform:translateY(-3px);
+    background:rgba(76,175,80,1);
+    box-shadow:0 8px 25px rgba(76,175,80,.4);
+}
+
+.download-btn:hover::before{ left:100%; }
+
+.download-btn[disabled]{
+    opacity:.6;
+    cursor:not-allowed;
+    transform:none;
+    box-shadow:none;
+}

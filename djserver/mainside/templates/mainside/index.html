@@ -28,10 +28,10 @@
             </div>
             <nav class="header-menu">
                 <a href="#" data-slide="0">ГЛАВНАЯ</a>
-                <a href="#" data-slide="1">КАРТА</a>
+                <a href="#" data-slide="1">ФАЙЛЫ</a>
                 <a href="#" data-slide="2">ССЫЛКИ</a>
             </nav>
-            <a href="#" class="header-button" data-slide="1">Карта</a>
+            <a href="#" class="header-button" data-slide="1">Файлы</a>
         </div>
         <div class="container header-wrapper">
             <div class="header-bottom"></div>
@@ -46,10 +46,8 @@
                 <div class="header-content__slide active">
                     <h1 class="letters" data-swiper-parallax="120%">Zонд</h1>
                     <div class="header-text" data-swiper-parallax="100%">
-                        <p>Наша интерактивная карта предоставляет детальную информацию о ландшафте Усть-Лабинского
-                            района, что особенно полезно для тех, кто заинтересован в развитии сельского хозяйства или
-                            изучении природных особенностей территории</p><br>
-                        <button class="button button--main" data-slide="1">Перейти к карте</button>
+                        <p>Реализована обработка нейросетью файлов с местностью</p><br>
+                        <button class="button button--main" data-slide="1">Перейти к файлам</button>
                     </div>
                 </div>
             </div>
@@ -63,7 +61,9 @@
                     <input type="text" id="search-region" placeholder="Поиск...">
                     <form id="download-form">
                         <div id="regions-list"></div>
-                        <button type="submit" class="download-btn">Скачать</button>
+                        <button type="submit" class="download-btn">
+                            <i class="fas fa-download"></i>
+                            Скачать</button>
                     </form>
                 </div>
                 <!-- Форма загрузки геоданных -->
@@ -123,12 +123,6 @@
             <div class="slider__layer" data-swiper-parallax="14%" style="background-image: url({% static 'mainside/img/slides/slide-3-layer-front.png' %});"></div>
             <div class="contacts-section">
                 <h1 class="map-title">Ссылки</h1>
-                <div class="map-description">
-                    <p>Наш проект находится в стадии активной разработки. Ниже представлены ссылки на платформы, где
-                        вы
-                        можете следить за процессом разработки и первыми узнавать о новых обновлениях интерактивной
-                        карты</p>
-                </div>
                 <div class="social-links">
                     <a href="https://clck.ru/3HMHzW" class="social-btn notion" target="_blank">Notion</a>
                     <a href="https://clck.ru/3HMJBq" class="social-btn github" target="_blank">GitHub</a>
