@@ -3,6 +3,7 @@ from .models import KmlUpload, TifUpload
 import zipfile
 from pathlib import Path
 
+
 class KmlUploadForm(forms.ModelForm):
     class Meta:
         model = KmlUpload
@@ -15,6 +16,7 @@ class KmlUploadForm(forms.ModelForm):
             'directory': True,
             'accept': '.kml'
         })
+
 
 class TifUploadForm(forms.ModelForm):
     class Meta:

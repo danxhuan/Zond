@@ -1,0 +1,154 @@
+/* Стили только для index.html */
+
+.results-list-section {
+    background: #fff;
+    color: #222;
+    border-radius: 12px;
+    padding: 32px 32px 24px 32px;
+    min-width: 380px;
+    max-width: 480px;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.10);
+    margin: 40px 0 0 0;
+}
+.results-list-section h2 {
+    margin-bottom: 18px;
+    color: #222;
+    font-size: 2.1rem;
+    font-weight: 800;
+}
+.results-list-section > div {
+    font-size: 15px;
+    color: #444;
+    margin-bottom: 12px;
+}
+#search-region {
+    width: 100%;
+    margin-bottom: 16px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    color: #222;
+    background: #f8f8f8;
+    font-size: 1rem;
+}
+#regions-list {
+    max-height: 260px;
+    overflow-y: auto;
+    margin-bottom: 18px;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+#regions-list label {
+    display: block;
+    color: #222;
+    font-size: 1.08rem;
+    margin-bottom: 0;
+    font-weight: 500;
+    cursor: pointer;
+}
+.download-btn {
+    width: 100%;
+    background: #2196f3;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 13px 0;
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+.upload-section {
+    margin-top: 32px;
+}
+.upload-container {
+    background: #222c;
+    border-radius: 12px;
+    padding: 24px;
+}
+.upload-title {
+    color: #fff;
+    text-align: center;
+    margin-bottom: 18px;
+}
+.file-upload-label {
+    color: #fff;
+}
+.upload-button {
+    width: 100%;
+    background: #43a047;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 13px 0;
+    font-weight: bold;
+    font-size: 1.1rem;
+    margin-top: 12px;
+}
+#processing-indicator {
+    display: none;
+    margin-top: 12px;
+    text-align: center;
+}
+#processing-indicator .fa-spinner {
+    color: #2196f3;
+    font-size: 24px;
+}
+#processing-status {
+    color: #fff;
+    margin-top: 8px;
+}
+#download-section {
+    display: none;
+}
+#download-section .download-btn {
+    display: block;
+    margin-top: 12px;
+    text-align: center;
+    color: #2196f3;
+    font-weight: bold;
+}
+#loading-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.8);
+    z-index: 9999;
+    justify-content: center;
+    align-items: center;
+}
+#loading-overlay > div {
+    text-align: center;
+    color: white;
+}
+#loading-overlay .fa-spinner {
+    font-size: 48px;
+    margin-bottom: 20px;
+}
+#loading-overlay h2 {
+    margin-bottom: 10px;
+}
+.map-slide {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 600px;
+}
+.download-link {
+    display: block;
+    margin-top: 12px;
+    text-align: center;
+    color: #2196f3;
+    font-weight: bold;
+    background: none;
+    border: none;
+    font-size: 1.1rem;
+    padding: 0;
+    cursor: pointer;
+    text-decoration: underline;
+    transition: color 0.2s;
+}
+.download-link:hover {
+    color: #1769aa;
+    text-decoration: underline;
+} 

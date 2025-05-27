@@ -54,9 +54,10 @@ def extract_streams(acc: np.ndarray,
 
 
 class FlowCalc:
-    def __init__(self, input_file: str, cell_size: int):
+    def __init__(self, input_file: str, cell_size: int, save_dir: str = None):
         self.save_path = input_file
         self.cell_size = cell_size
+        self.save_dir = save_dir
         print("Starting flow calculation initialization!")
         try:
             file = rasterio.open(input_file, 'r')
@@ -92,15 +93,23 @@ class FlowCalc:
 
     def save_results(self):
         """Save results of flow calculations"""
-        # Получаем имя файла без расширения (например, "dem" из "dem.tif")
-        input_filename = os.path.splitext(os.path.basename(self.save_path))[0]
+        # Если save_dir задан — используем его, иначе старую логику
+           # Получаем имя файла без расширения (например, "dem" из "dem.tif")
+        # input_filename = os.path.splitext(os.path.basename(self.save_path))[0]
         
         # Создаём путь к папке results (на том же уровне, что и enhanced)
-        parent_dir = os.path.dirname(os.path.dirname(self.save_path))  # .../ (родитель enhanced)
-        res_dir = os.path.join(parent_dir, "results")  # .../results/
+        # parent_dir = os.path.dirname(os.path.dirname(self.save_path))  # .../ (родитель enhanced)
+        # res_dir = os.path.join(parent_dir, "results")  # .../results/
         
         # Создаём уникальную подпапку (например, .../results/dem/)
-        unique_res_dir = os.path.join(res_dir, input_filename)
+        # unique_res_dir = os.path.join(res_dir, input_filename)
+        if self.save_dir:
+            unique_res_dir = self.save_dir
+        else:
+            input_filename = os.path.splitext(os.path.basename(self.save_path))[0]
+            parent_dir = os.path.dirname(os.path.dirname(self.save_path))
+            res_dir = os.path.join(parent_dir, "results")
+            unique_res_dir = os.path.join(res_dir, input_filename)
 
         self.geodata.update(count=1)
         names = ["filled", "accum", "depressions", "breached"]

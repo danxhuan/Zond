@@ -12,6 +12,7 @@
     <script src="https://unpkg.com/leaflet/dist/leaflet.js" defer></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="{% static 'mainside/css/main.css' %}">
+    <link rel="stylesheet" href="{% static 'mainside/css/index.css' %}">
     <link rel="icon" href="https://img.freepik.com/vektoren-premium/globus-auf-gelbem-staender_681342-36.jpg"
           type="image/x-icon">
     <script src="{% static 'mainside/js/app.js' %}" defer></script>
@@ -34,16 +35,13 @@
         </div>
         <div class="container header-wrapper">
             <div class="header-bottom"></div>
-        </div>
+        </div>                  
     </div>
     <div class="swiper-wrapper">
         <div class="swiper-slide slider__item">
-            <div class="slider__layer" data-swiper-parallax="35%"
-                 style="background-image: url({% static 'mainside/img/slides/slide-1-layer-back.jpg' %});"></div>
-            <div class="slider__layer" data-swiper-parallax="25%"
-                 style="background-image: url({% static 'mainside/img/slides/slide-1-layer-middle.png' %});"></div>
-            <div class="slider__layer" data-swiper-parallax="14%"
-                 style="background-image: url({% static 'mainside/img/slides/slide-1-layer-front.png' %});"></div>
+            <div class="slider__layer" data-swiper-parallax="35%" style="background-image: url({% static 'mainside/img/slides/slide-1-layer-back.jpg' %});"></div>
+            <div class="slider__layer" data-swiper-parallax="25%" style="background-image: url({% static 'mainside/img/slides/slide-1-layer-middle.png' %});"></div>
+            <div class="slider__layer" data-swiper-parallax="14%" style="background-image: url({% static 'mainside/img/slides/slide-1-layer-front.png' %});"></div>
             <div class="header-content">
                 <div class="header-content__slide active">
                     <h1 class="letters" data-swiper-parallax="120%">Zонд</h1>
@@ -57,34 +55,23 @@
             </div>
         </div>
         <div class="swiper-slide slider__item">
-            <div class="slider__layer" data-swiper-parallax="35%"
-                 style="background-image: url({% static 'mainside/img/slides/slide-2-layer-back.jpg' %});"></div>
+            <div class="slider__layer" data-swiper-parallax="35%" style="background-image: url({% static 'mainside/img/slides/slide-2-layer-back.jpg' %});"></div>
             <div class="map-slide">
-                <h1 class="map-title">Карта рельефа</h1>
-                <div class="map-description">
-                    <p>Интерактивная карта Усть-Лабинского района показывает особенности рельефа, уклонов местности и
-                        систему водотоков. Эти данные важны для планирования сельскохозяйственных работ и анализа
-                        природных условий</p>
+                <div class="results-list-section">
+                    <h2>Выберите из доступных</h2>
+                    <div>Список регионов доступных к скачиванию:</div>
+                    <input type="text" id="search-region" placeholder="Поиск...">
+                    <form id="download-form">
+                        <div id="regions-list"></div>
+                        <button type="submit" class="download-btn">Скачать</button>
+                    </form>
                 </div>
-                <div id="map" class="map-container">
-                    <button class="map-fullscreen-btn" id="openFullscreen">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M3 3H9V5H5V9H3V3Z" fill="currentColor"/>
-                            <path d="M3 21H9V19H5V15H3V21Z" fill="currentColor"/>
-                            <path d="M21 3H15V5H19V9H21V3Z" fill="currentColor"/>
-                            <path d="M21 21H15V19H19V15H21V21Z" fill="currentColor"/>
-                        </svg>
-                    </button>
-                </div>
-
-                <!-- Формы загрузки файлов -->
+                <!-- Форма загрузки геоданных -->
                 <div class="upload-section">
                     <div class="upload-container">
                         <h2 class="upload-title">Загрузка геоданных</h2>
-
-                        <!-- В форме загрузки добавьте проверку перед отправкой -->
                         <form method="post" enctype="multipart/form-data" action="{% url 'upload_all' %}"
-                              onsubmit="return validateFiles()" class="upload-form">
+                              onsubmit="return handleFormSubmit(event)" class="upload-form">
                             {% csrf_token %}
                             <div class="form-group">
                                 <label for="kml-upload" class="file-upload-label">
@@ -95,7 +82,6 @@
                                 <input type="file" id="kml-upload" name="kml_file" webkitdirectory directory multiple
                                        accept=".kml" required>
                             </div>
-
                             <div class="form-group">
                                 <label for="tif-upload" class="file-upload-label">
                                     <i class="fas fa-file-image"></i>
@@ -104,18 +90,19 @@
                                 </label>
                                 <input type="file" id="tif-upload" name="tif_file" accept=".tif,.tiff" required>
                             </div>
-
-                            <button type="submit" class="upload-button">
+                            <button type="submit" id="upload-btn" class="upload-button">
                                 <i class="fas fa-upload"></i> Отправить файлы
                             </button>
-                            {% if request.session.can_download_results %}
-                                <a href="{% url 'download_results' %}" class="download-btn">
+                            <div id="processing-indicator">
+                                <i class="fas fa-spinner fa-spin"></i>
+                                <p id="processing-status">Подготовка к обработке...</p>
+                            </div>
+                            <div id="download-section">
+                                <a href="{% url 'download_results' %}" class="download-link">
                                     <i class="fas fa-download"></i> Скачать результаты
                                 </a>
-                            {% endif %}
-
+                            </div>
                         </form>
-
                         {% if messages %}
                             <div class="upload-messages">
                                 {% for message in messages %}
@@ -131,12 +118,9 @@
             </div>
         </div>
         <div class="swiper-slide slider__item">
-            <div class="slider__layer" data-swiper-parallax="35%"
-                 style="background-image: url({% static 'mainside/img/slides/slide-3-layer-back.jpg' %});"></div>
-            <div class="slider__layer" data-swiper-parallax="25%"
-                 style="background-image: url({% static 'mainside/img/slides/slide-3-layer-middle.png' %});"></div>
-            <div class="slider__layer" data-swiper-parallax="14%"
-                 style="background-image: url({% static 'mainside/img/slides/slide-3-layer-front.png' %});"></div>
+            <div class="slider__layer" data-swiper-parallax="35%" style="background-image: url({% static 'mainside/img/slides/slide-3-layer-back.jpg' %});"></div>
+            <div class="slider__layer" data-swiper-parallax="25%" style="background-image: url({% static 'mainside/img/slides/slide-3-layer-middle.png' %});"></div>
+            <div class="slider__layer" data-swiper-parallax="14%" style="background-image: url({% static 'mainside/img/slides/slide-3-layer-front.png' %});"></div>
             <div class="contacts-section">
                 <h1 class="map-title">Ссылки</h1>
                 <div class="map-description">
@@ -154,5 +138,17 @@
         </div>
     </div>
 </div>
+
+<!-- Loading Overlay -->
+<div id="loading-overlay">
+    <div>
+        <i class="fas fa-spinner fa-spin"></i>
+        <h2>Обработка файлов...</h2>
+        <p id="processing-status">Подготовка к обработке...</p>
+    </div>
+</div>
+
+<!-- Подключение внешнего JS-файла с логикой -->
+<script src="{% static 'mainside/js/form-logic.js' %}"></script>
 </body>
 </html>

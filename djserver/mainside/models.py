@@ -9,10 +9,12 @@ def validate_kml_extension(value):
     if ext != '.kml':
         raise ValidationError('Поддерживаются только KML файлы')
 
+
 def validate_tif_extension(value):
     ext = os.path.splitext(value.name)[1].lower()
     if ext not in ['.tif', '.tiff']:
         raise ValidationError('Поддерживаются только TIFF файлы')
+
 
 class UploadSession(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
@@ -20,6 +22,7 @@ class UploadSession(models.Model):
 
     def __str__(self):
         return f"Session {self.session_id}"
+
 
 class KmlUpload(models.Model):
     session = models.ForeignKey(UploadSession, on_delete=models.CASCADE, related_name='kmls')
@@ -39,6 +42,7 @@ class KmlUpload(models.Model):
     def __str__(self):
         return f"KML: {self.original_name}"
 
+
 class TifUpload(models.Model):
     session = models.ForeignKey(UploadSession, on_delete=models.CASCADE, related_name='tifs')
 
@@ -56,3 +60,15 @@ class TifUpload(models.Model):
 
     def __str__(self):
         return f"TIF: {self.original_name}"
+
+
+class ProcessingStatus(models.Model):
+    session = models.ForeignKey(UploadSession, on_delete=models.CASCADE, related_name='processing_status')
+    status = models.CharField(max_length=20, default='pending')  # pending, processing, completed, error
+    message = models.CharField(max_length=255, default='')
+    can_download_results = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Status for {self.session.session_id}: {self.status}"
