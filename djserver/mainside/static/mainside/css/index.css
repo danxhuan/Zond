@@ -63,7 +63,18 @@
 .upload-container {
     background: #222c;
     border-radius: 12px;
-    padding: 24px;
+    padding: 18px 16px;
+    max-width: 420px;
+    width: 100%;
+    margin: 0 auto;
+    box-sizing: border-box;
+}
+
+@media (max-width: 500px) {
+    .upload-container {
+        max-width: 98vw;
+        padding: 10px 4px;
+    }
 }
 
 .upload-title {
@@ -159,7 +170,7 @@
     transition:all .4s cubic-bezier(.4,0,.2,1);
     box-shadow:0 4px 15px rgba(76,175,80,.3);
 }
-.download-link::before{ /* тот же “блик” */
+.download-link::before{ /* тот же "блик" */
     content:'';
     position:absolute;
     inset:0;
@@ -305,7 +316,7 @@
         max-width:440px;
     }
 }
-    /* === Белый “мелкий” текст во всех подписи / <small> ====================== */
+    /* === Белый "мелкий" текст во всех подписи / <small> ====================== */
     .results-list-section small,
     .upload-container small,
     .results-list-section .file-info,
@@ -317,7 +328,7 @@
 
     /* === 2. Тёмный фон + белый текст у списка регионов ========================= */
     /* —————————————————————————————————————————————————————
- *  Левый блок (“Выберите из доступных”) → как правый
+ *  Левый блок («Выберите из доступных») → как правый
  * ————————————————————————————————————————————————————— */
 .results-list-section{
     /* фон, границы и геом. параметры — идентичны upload-container */
@@ -422,4 +433,36 @@
     cursor:not-allowed;
     transform:none;
     box-shadow:none;
+}
+
+#download-section {
+    display: none;
+}
+
+.button--disabled, .download-link.button--disabled {
+    opacity: 0.6;
+    pointer-events: none;
+    background: #bdbdbd !important;
+    color: #fff !important;
+}
+
+.file-list {
+    color: #fff;
+    font-size: 0.92em;
+    margin: 4px 0 8px 0;
+    word-break: break-all;
+    max-width: 100%;
+    background: rgba(34,34,44,0.7);
+    border-radius: 6px;
+    padding: 2px 6px;
+    box-sizing: border-box;
+    overflow-x: auto;
+    max-height: 80px;
+    overflow-y: auto;
+}
+
+.file-list div {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }

@@ -61,15 +61,19 @@
                     <input type="text" id="search-region" placeholder="Поиск...">
                     <form id="download-form">
                         <div id="regions-list"></div>
-                        <button type="submit" class="download-btn">
+                        <button type="submit" class="download-btn" id="download-selected-btn">
                             <i class="fas fa-download"></i>
                             Скачать</button>
+                        <span id="download-selected-spinner" style="display:none; margin-left:10px;">
+                            <i class="fas fa-spinner fa-spin"></i> Формируется архив...
+                        </span>
                     </form>
                 </div>
                 <!-- Форма загрузки геоданных -->
                 <div class="upload-section">
                     <div class="upload-container">
                         <h2 class="upload-title">Загрузка геоданных</h2>
+                        <div id="js-warning" class="upload-messages"></div>
                         <form method="post" enctype="multipart/form-data" action="{% url 'upload_all' %}"
                               onsubmit="return handleFormSubmit(event)" class="upload-form">
                             {% csrf_token %}
@@ -81,6 +85,7 @@
                                 </label>
                                 <input type="file" id="kml-upload" name="kml_file" webkitdirectory directory multiple
                                        accept=".kml" required>
+                                <div id="kml-file-list" class="file-list"></div>
                             </div>
                             <div class="form-group">
                                 <label for="tif-upload" class="file-upload-label">
@@ -89,6 +94,7 @@
                                     <span class="file-info">Поддерживаются .tif/.tiff</span>
                                 </label>
                                 <input type="file" id="tif-upload" name="tif_file" accept=".tif,.tiff" required>
+                                <div id="tif-file-list" class="file-list"></div>
                             </div>
                             <button type="submit" id="upload-btn" class="upload-button">
                                 <i class="fas fa-upload"></i> Отправить файлы
@@ -98,9 +104,12 @@
                                 <p id="processing-status">Подготовка к обработке...</p>
                             </div>
                             <div id="download-section">
-                                <a href="{% url 'download_results' %}" class="download-link">
+                                <a href="{% url 'download_results' %}" class="download-link" id="download-results-btn">
                                     <i class="fas fa-download"></i> Скачать результаты
                                 </a>
+                                <span id="download-results-spinner" style="display:none; margin-left:10px;">
+                                    <i class="fas fa-spinner fa-spin"></i> Формируется архив...
+                                </span>
                             </div>
                         </form>
                         {% if messages %}

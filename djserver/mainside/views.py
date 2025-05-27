@@ -141,8 +141,9 @@ def upload_all(request):
         tif_upload_dir = os.path.join(settings.MEDIA_ROOT, 'tif_regions_for_scrapper')
         tif_path = os.path.join(tif_upload_dir, tif_file.name)
         tif_upload_obj = None
+        tif_exists_message = None
         if os.path.exists(tif_path):
-            messages.info(request, f'Файл {tif_file.name} уже существует, будет использован существующий файл.')
+            tif_exists_message = f'Файл {tif_file.name} уже существует, будет использован существующий файл.'
         else:
             tif_upload_obj = TifUpload.objects.create(
                 session=session,
@@ -151,7 +152,7 @@ def upload_all(request):
             )
 
         # Регистрируем файлы в базе
-        if tif_upload_obj:
+        if tif_upload_obj is not None:
             register_files_in_database(session)
         else:
             with psycopg2.connect(**DB_CONFIG) as conn:
@@ -178,7 +179,8 @@ def upload_all(request):
         return JsonResponse({
             'status': 'processing',
             'session_id': session.session_id,
-            'message': 'Начало обработки файлов...'
+            'message': 'Начало обработки файлов...',
+            'tif_exists_message': tif_exists_message
         })
 
     except Exception as e:
