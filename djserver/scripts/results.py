@@ -55,250 +55,157 @@ def wait_for_db(max_retries=10, delay=5):
     raise Exception("Не удалось подключиться к базе данных")
 
 
-def init_database():
-    """Создание таблицы если не существует"""
-    conn = None
-    try:
-        conn = psycopg2.connect(**DB_CONFIG)
-        with conn.cursor() as cur:
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS terrain_regions (
-                    id SERIAL PRIMARY KEY,
-                    source_path TEXT NOT NULL UNIQUE, -- Исходный KML
-                    base_tif_path TEXT NOT NULL,      -- Базовый TIF для региона
-                    region_path TEXT,                 -- Выход Scrapper
-                    enhanced_path TEXT,               -- Выход ML
-                    result_path TEXT,                 -- Выход Calculations
-                    update_date TIMESTAMP,
-                    is_processed BOOLEAN DEFAULT FALSE,
-                    session_id TEXT
-                );
-            """)
-            conn.commit()
-            print("Таблица 'terrain_regions' создана или уже существует")
-
-    except Exception as e:
-        print(f"Ошибка при создании таблицы: {str(e)}")
-        raise
-    finally:
-        if conn:
-            conn.close()
-
-
 def scrapper_process(session_id):
     """Обработка KML через Scrapper с группировкой по папкам"""
-    conn = None
-    try:
-        conn = psycopg2.connect(**DB_CONFIG)
-        with conn.cursor() as cur:
-            # Получаем все необработанные KML файлы
-            cur.execute("""
-                SELECT id, source_path, base_tif_path FROM terrain_regions 
-                WHERE region_path IS NULL AND is_processed = FALSE;
-            """)
-            tasks = cur.fetchall()
+    from mainside.models import TerrainRegion
+    from django.db import transaction
+    from django.utils import timezone
 
-            REGIONS_DIR.mkdir(exist_ok=True)
+    # Получаем все необработанные KML файлы
+    tasks = TerrainRegion.objects.filter(region_path__isnull=True, is_processed=False)
 
-            # Группируем KML файлы по папкам и соответствующим TIF файлам
-            folder_map = {}
-            for file_id, kml_path, tif_path in tasks:
-                kml_path = Path(kml_path)
-                parent_folder = kml_path.parent
-                if parent_folder not in folder_map:
-                    folder_map[parent_folder] = {
-                        'tif_path': tif_path,
-                        'file_ids': []
-                    }
-                folder_map[parent_folder]['file_ids'].append(file_id)
+    REGIONS_DIR.mkdir(exist_ok=True)
 
-            # Обрабатываем каждую уникальную папку
-            for folder, data in folder_map.items():
-                tif_path = data['tif_path']
-                file_ids = data['file_ids']
+    # Группируем KML файлы по папкам и соответствующим TIF файлам
+    folder_map = {}
+    for task in tasks:
+        kml_path = Path(task.source_path)
+        parent_folder = kml_path.parent
+        if parent_folder not in folder_map:
+            folder_map[parent_folder] = {
+                'tif_path': task.base_tif_path,
+                'file_ids': []
+            }
+        folder_map[parent_folder]['file_ids'].append(task.id)
 
-                try:
-                    # Вызываем скраппер для всей папки
-                    result_path = get_kml_regions(
-                        kml_path=str(folder),
-                        tif_path=str(tif_path),
-                        forced=True
-                    )
+    # Обрабатываем каждую уникальную папку
+    for folder, data in folder_map.items():
+        tif_path = data['tif_path']
+        file_ids = data['file_ids']
 
-                    if result_path:
-                        # Находим все созданные .tif файлы в result_path
-                        created_files = list(Path(result_path).glob('*.tif'))
+        try:
+            # Вызываем скраппер для всей папки
+            result_path = get_kml_regions(
+                kml_path=str(folder),
+                tif_path=str(tif_path),
+                forced=True
+            )
 
-                        # Сопоставляем созданные файлы с исходными KML
-                        for tif_file in created_files:
-                            # Ищем соответствующий KML файл
-                            kml_name = tif_file.stem + '.kml'
-                            kml_file = folder / kml_name
+            if result_path:
+                # Находим все созданные .tif файлы в result_path
+                created_files = list(Path(result_path).glob('*.tif'))
 
-                            # Находим ID записи для этого KML
-                            cur.execute("""
-                                SELECT id FROM terrain_regions
-                                WHERE source_path = %s AND base_tif_path = %s
-                            """, (str(kml_file), str(tif_path)))
-                            matching_ids = [row[0] for row in cur.fetchall()]
+                # Сопоставляем созданные файлы с исходными KML
+                for tif_file in created_files:
+                    # Ищем соответствующий KML файл
+                    kml_name = tif_file.stem + '.kml'
+                    kml_file = folder / kml_name
 
-                            # Обновляем все подходящие записи
-                            for file_id in matching_ids:
-                                cur.execute("""
-                                    UPDATE terrain_regions 
-                                    SET region_path = %s,
-                                        session_id = %s
-                                    WHERE id = %s AND session_id = %s;
-                                """, (str(tif_file), session_id, file_id, session_id))
+                    # Находим ID записи для этого KML
+                    matching_tasks = TerrainRegion.objects.filter(source_path=str(kml_file), base_tif_path=str(tif_path))
 
-                        conn.commit()
-                        print(f"Обработана папка {folder} -> {len(created_files)} файлов")
-                    else:
-                        print(f"Ошибка обработки папки {folder}")
-                        conn.rollback()
+                    # Обновляем все подходящие записи
+                    for task in matching_tasks:
+                        task.region_path = str(tif_file)
+                        task.session_id = session_id
+                        task.save()
 
-                except Exception as e:
-                    print(f"Ошибка обработки папки {folder}: {str(e)}")
-                    conn.rollback()
+                print(f"Обработана папка {folder} -> {len(created_files)} файлов")
+            else:
+                print(f"Ошибка обработки папки {folder}")
 
-    except Exception as e:
-        print(f"Ошибка в процессе Scrapper: {str(e)}")
-        raise
-    finally:
-        if conn:
-            conn.close()
+        except Exception as e:
+            print(f"Ошибка обработки папки {folder}: {str(e)}")
 
 
 def ml_process(session_id):
     """Обработка через ML блок"""
-    conn = None
-    try:
-        conn = psycopg2.connect(**DB_CONFIG)
-        with conn.cursor() as cur:
-            # Получаем файлы для обработки ML
-            cur.execute("""
-                SELECT id, region_path FROM terrain_regions 
-                WHERE enhanced_path IS NULL AND region_path IS NOT NULL;
-            """)
-            tasks = cur.fetchall()
+    from mainside.models import TerrainRegion
+    from django.db import transaction
 
-            # Создаем выходную папку
-            ENHANCED_DIR.mkdir(exist_ok=True)
+    # Получаем файлы для обработки ML
+    tasks = TerrainRegion.objects.filter(enhanced_path__isnull=True, region_path__isnull=False)
 
-            for file_id, region_path in tasks:
-                try:
-                    input_tiff = Path(region_path)
+    # Создаем выходную папку
+    ENHANCED_DIR.mkdir(exist_ok=True)
 
-                    # Проверяем, что файл существует и это .tif
-                    if not input_tiff.exists() or input_tiff.suffix.lower() != '.tif':
-                        print(f"Неверный путь к TIFF: {input_tiff}")
-                        continue
+    for task in tasks:
+        try:
+            input_tiff = Path(task.region_path)
 
-                    # Генерируем путь для выходного файла
-                    output_path = ENHANCED_DIR / f"{input_tiff.stem}_enhanced.tif"
+            # Проверяем, что файл существует и это .tif
+            if not input_tiff.exists() or input_tiff.suffix.lower() != '.tif':
+                print(f"Неверный путь к TIFF: {input_tiff}")
+                continue
 
-                    # Обрабатываем через ML
-                    if interpolate_terrain(
-                            input_path=str(input_tiff),
-                            output_path=str(output_path),
-                            model_path=str(MODEL_PATH)
-                    ):
-                        # Обновляем БД
-                        cur.execute("""
-                            UPDATE terrain_regions 
-                            SET enhanced_path = %s,
-                                session_id = %s
-                            WHERE id = %s AND session_id = %s;
-                        """, (str(output_path), session_id, file_id, session_id))
-                        cur.execute("""
-                            UPDATE terrain_regions 
-                            SET session_id = %s
-                            WHERE id = %s AND (session_id IS NULL OR session_id = '') AND session_id = %s
-                        """, (session_id, file_id, session_id))
-                        conn.commit()
-                        print(f"Обработан ML {input_tiff} -> {output_path}")
-                    else:
-                        print(f"Ошибка ML обработки {input_tiff}")
-                        conn.rollback()
+            # Генерируем путь для выходного файла
+            output_path = ENHANCED_DIR / f"{input_tiff.stem}_enhanced.tif"
 
-                except Exception as e:
-                    print(f"Ошибка ML обработки {region_path}: {str(e)}")
-                    conn.rollback()
-    except Exception as e:
-        print(f"Ошибка в процессе ML: {str(e)}")
-        raise
-    finally:
-        if conn:
-            conn.close()
+            # Обрабатываем через ML
+            if interpolate_terrain(
+                    input_path=str(input_tiff),
+                    output_path=str(output_path),
+                    model_path=str(MODEL_PATH)
+            ):
+                # Обновляем БД
+                task.enhanced_path = str(output_path)
+                task.session_id = session_id
+                task.save()
+                print(f"Обработан ML {input_tiff} -> {output_path}")
+            else:
+                print(f"Ошибка ML обработки {input_tiff}")
+
+        except Exception as e:
+            print(f"Ошибка ML обработки {task.region_path}: {str(e)}")
 
 
 def calculations_process(session_id):
     """Обработка через Calculations блок"""
-    conn = None
-    try:
-        conn = psycopg2.connect(**DB_CONFIG)
-        with conn.cursor() as cur:
-            # Получаем файлы для расчетов
-            cur.execute("""
-                SELECT id, base_tif_path,enhanced_path FROM terrain_regions 
-                WHERE result_path IS NULL AND enhanced_path IS NOT NULL;
-            """)
-            tasks = cur.fetchall()
+    from mainside.models import TerrainRegion
+    from django.db import transaction
+    from django.utils import timezone
 
-            # Создаем выходную папку
-            RESULTS_DIR.mkdir(exist_ok=True)
+    # Получаем файлы для расчетов
+    tasks = TerrainRegion.objects.filter(result_path__isnull=True, enhanced_path__isnull=False)
 
-            for file_id, tif_path, enhanced_tiff in tasks:
-                try:
-                    tif_filename = Path(tif_path).stem
-                    filename = Path(enhanced_tiff).stem.split("_enhanced")[0]
-                    result_folder = RESULTS_DIR / tif_filename / filename
-                    result_folder.mkdir(parents=True, exist_ok=True)
+    # Создаем выходную папку
+    RESULTS_DIR.mkdir(exist_ok=True)
 
-                    # Выполняем расчеты водотоков
-                    flow = FlowCalc(enhanced_tiff, CELL_SIZE, save_dir=str(result_folder))
-                    flow.find_results()
-                    flow.save_results()
+    for task in tasks:
+        try:
+            tif_filename = Path(task.base_tif_path).stem
+            filename = Path(task.enhanced_path).stem.split("_enhanced")[0]
+            result_folder = RESULTS_DIR / tif_filename / filename
+            result_folder.mkdir(parents=True, exist_ok=True)
 
-                    # Выполняем расчеты форм рельефа
-                    landform = LandformCalc(enhanced_tiff, CELL_SIZE, save_dir=str(result_folder))
-                    landform.find_results()
-                    landform.save_results()
+            # Выполняем расчеты водотоков
+            flow = FlowCalc(task.enhanced_path, CELL_SIZE, save_dir=str(result_folder))
+            flow.find_results()
+            flow.save_results()
 
-                    # Проверяем что папка с результатами создана и не пуста
-                    if not result_folder.exists():
-                        print(f"Папка результатов не создана: {str(result_folder)}")
-                        continue
-                    if not any(result_folder.iterdir()):
-                        print(f"Папка результатов пуста: {str(result_folder)}")
-                        continue
+            # Выполняем расчеты форм рельефа
+            landform = LandformCalc(task.enhanced_path, CELL_SIZE, save_dir=str(result_folder))
+            landform.find_results()
+            landform.save_results()
 
-                    # Обновляем БД
-                    cur.execute("""
-                        UPDATE terrain_regions 
-                        SET result_path = %s,
-                            update_date = %s,
-                            is_processed = TRUE,
-                            session_id = %s
-                        WHERE id = %s AND session_id = %s;
-                    """, (str(result_folder), datetime.now(), session_id, file_id, session_id))
-                    cur.execute("""
-                        UPDATE terrain_regions 
-                        SET session_id = %s
-                        WHERE id = %s AND (session_id IS NULL OR session_id = '') AND session_id = %s
-                    """, (session_id, file_id, session_id))
-                    conn.commit()
-                    print(f"Обработано Calculations {enhanced_tiff} -> {str(result_folder)}")
+            # Проверяем что папка с результатами создана и не пуста
+            if not result_folder.exists():
+                print(f"Папка результатов не создана: {str(result_folder)}")
+                continue
+            if not any(result_folder.iterdir()):
+                print(f"Папка результатов пуста: {str(result_folder)}")
+                continue
 
-                except Exception as e:
-                    print(f"Ошибка расчетов для {enhanced_tiff}: {str(e)}")
-                    conn.rollback()
-    except Exception as e:
-        print(f"Ошибка в процессе Calculations: {str(e)}")
-        raise
-    finally:
-        if conn:
-            conn.close()
+            # Обновляем БД
+            task.result_path = str(result_folder)
+            task.update_date = timezone.now()
+            task.is_processed = True
+            task.session_id = session_id
+            task.save()
+            print(f"Обработано Calculations {task.enhanced_path} -> {str(result_folder)}")
+
+        except Exception as e:
+            print(f"Ошибка расчетов для {task.enhanced_path}: {str(e)}")
 
 
 def process_pipeline(session_id):
@@ -306,9 +213,6 @@ def process_pipeline(session_id):
     try:
         print("1. Ожидание БД...")
         wait_for_db()
-
-        print("2. Инициализация БД...")
-        init_database()
 
         print("3. Обработка Scrapper...")
         scrapper_process(session_id)

@@ -12,7 +12,7 @@ from django.shortcuts import render, redirect
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
-from .models import UploadSession, KmlUpload, TifUpload, ProcessingStatus
+from .models import UploadSession, KmlUpload, TifUpload, ProcessingStatus, TerrainRegion
 
 
 DB_CONFIG = {
@@ -34,36 +34,35 @@ def upload(request):
     return render(request, 'mainside/index.html')
 
 
-def register_files_in_database(session):
-    """Регистрация файлов в основной системе"""
+def register_files_in_database(session, tif_path=None):
+    """Регистрация файлов в основной системе через Django ORM"""
     try:
-        tif_upload = session.tifs.first()
-        if not tif_upload:
-            raise Exception("Не найден TIF файл для сессии")
+        # Если tif_path не передан, ищем среди объектов TifUpload
+        if tif_path is None:
+            tif_upload = session.tifs.first()
+            if not tif_upload:
+                raise Exception("Не найден TIF файл для сессии")
+            tif_path = tif_upload.tif_file.path
 
-        tif_path = tif_upload.tif_file.path
         session_id = session.session_id
 
-        with psycopg2.connect(**DB_CONFIG) as conn:
-            with conn.cursor() as cur:
-                # Для каждого KML файла в сессии
-                for kml_upload in session.kmls.all():
-                    kml_path = kml_upload.kml_file.path
+        # Для каждого KML файла в сессии
+        for kml_upload in session.kmls.all():
+            kml_path = kml_upload.kml_file.path
 
-                    # Проверяем существование файлов
-                    if not os.path.exists(kml_path) or not os.path.exists(tif_path):
-                        continue
+            # Проверяем существование файлов
+            if not os.path.exists(kml_path) or not os.path.exists(tif_path):
+                continue
 
-                    # Регистрируем в базе
-                    cur.execute("""
-                        INSERT INTO terrain_regions
-                        (source_path, base_tif_path, is_processed, session_id)
-                        VALUES (%s, %s, FALSE, %s)
-                        ON CONFLICT (source_path) DO NOTHING;
-                    """, (kml_path, tif_path, session_id))
-
-                conn.commit()
-
+            # Регистрируем в базе через ORM
+            TerrainRegion.objects.get_or_create(
+                source_path=kml_path,
+                defaults={
+                    'base_tif_path': tif_path,
+                    'is_processed': False,
+                    'session_id': session_id
+                }
+            )
     except Exception as e:
         print(f"Ошибка при регистрации в базе: {str(e)}")
         raise
@@ -144,30 +143,14 @@ def upload_all(request):
         tif_exists_message = None
         if os.path.exists(tif_path):
             tif_exists_message = f'Файл {tif_file.name} уже существует, будет использован существующий файл.'
+            register_files_in_database(session, tif_path=tif_path)
         else:
             tif_upload_obj = TifUpload.objects.create(
                 session=session,
                 tif_file=tif_file,
                 original_name=tif_file.name
             )
-
-        # Регистрируем файлы в базе
-        if tif_upload_obj is not None:
             register_files_in_database(session)
-        else:
-            with psycopg2.connect(**DB_CONFIG) as conn:
-                with conn.cursor() as cur:
-                    for kml_upload in session.kmls.all():
-                        kml_path = kml_upload.kml_file.path
-                        if not os.path.exists(kml_path) or not os.path.exists(tif_path):
-                            continue
-                        cur.execute("""
-                            INSERT INTO terrain_regions
-                            (source_path, base_tif_path, is_processed, session_id)
-                            VALUES (%s, %s, FALSE, %s)
-                            ON CONFLICT (source_path) DO NOTHING;
-                        """, (kml_path, tif_path, session.session_id))
-                    conn.commit()
 
         # Запускаем асинхронную обработку
         thread = threading.Thread(target=process_files_async, args=(session.session_id,))
@@ -230,16 +213,12 @@ def download_results_zip(request):
         messages.error(request, 'Статус обработки не найден.')
         return redirect('index')
 
-    result_paths = []
-    with psycopg2.connect(**DB_CONFIG) as conn:
-        with conn.cursor() as cur:
-            cur.execute("""
-                SELECT result_path FROM terrain_regions
-                WHERE session_id = %s AND is_processed = TRUE
-            """, (upload_session_id,))
-            for row in cur.fetchall():
-                if row[0]:
-                    result_paths.append(row[0])
+    # ORM вместо SQL
+    result_paths = list(
+        TerrainRegion.objects.filter(session_id=upload_session_id, is_processed=True)
+        .exclude(result_path__isnull=True)
+        .values_list('result_path', flat=True)
+    )
     print('DEBUG: result_paths:', result_paths)
 
     files_added = []
