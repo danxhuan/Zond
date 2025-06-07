@@ -466,3 +466,24 @@
     overflow: hidden;
     text-overflow: ellipsis;
 }
+
+.letters, .letters .letter {
+    color: #fff !important;
+}
+
+h1.letters {
+    color: #fff !important;
+    -webkit-text-fill-color: #fff !important;
+}
+
+.button,
+.button--main,
+.download-btn,
+.download-link,
+.button i,
+.download-btn i,
+.download-link i,
+.map-title,
+h1.map-title {
+    color: #fff !important;
+}

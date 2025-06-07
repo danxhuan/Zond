@@ -4,7 +4,6 @@ import uuid
 import zipfile
 from io import BytesIO
 
-import psycopg2
 from django.conf import settings
 from django.contrib import messages
 from django.http import HttpResponse, JsonResponse
@@ -12,16 +11,7 @@ from django.shortcuts import render, redirect
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
-from .models import UploadSession, KmlUpload, TifUpload, ProcessingStatus
-
-
-DB_CONFIG = {
-    'dbname': 'terrain_db',
-    'user': 'terrain_user',
-    'password': 'terrain_password',
-    'host': 'localhost',
-    'port': '5432'
-}
+from .models import UploadSession, KmlUpload, TifUpload, ProcessingStatus, TerrainRegion
 
 
 def index(request):
@@ -35,7 +25,7 @@ def upload(request):
 
 
 def register_files_in_database(session):
-    """Регистрация файлов в основной системе"""
+    """Регистрация файлов в основной системе через ORM"""
     try:
         tif_upload = session.tifs.first()
         if not tif_upload:
@@ -44,26 +34,23 @@ def register_files_in_database(session):
         tif_path = tif_upload.tif_file.path
         session_id = session.session_id
 
-        with psycopg2.connect(**DB_CONFIG) as conn:
-            with conn.cursor() as cur:
-                # Для каждого KML файла в сессии
-                for kml_upload in session.kmls.all():
-                    kml_path = kml_upload.kml_file.path
+        # Для каждого KML файла в сессии
+        for kml_upload in session.kmls.all():
+            kml_path = kml_upload.kml_file.path
 
-                    # Проверяем существование файлов
-                    if not os.path.exists(kml_path) or not os.path.exists(tif_path):
-                        continue
+            # Проверяем существование файлов
+            if not os.path.exists(kml_path) or not os.path.exists(tif_path):
+                continue
 
-                    # Регистрируем в базе
-                    cur.execute("""
-                        INSERT INTO terrain_regions
-                        (source_path, base_tif_path, is_processed, session_id)
-                        VALUES (%s, %s, FALSE, %s)
-                        ON CONFLICT (source_path) DO NOTHING;
-                    """, (kml_path, tif_path, session_id))
-
-                conn.commit()
-
+            # Регистрируем в базе через ORM
+            TerrainRegion.objects.get_or_create(
+                source_path=kml_path,
+                defaults={
+                    'base_tif_path': tif_path,
+                    'is_processed': False,
+                    'session_id': session_id,
+                }
+            )
     except Exception as e:
         print(f"Ошибка при регистрации в базе: {str(e)}")
         raise
@@ -155,19 +142,18 @@ def upload_all(request):
         if tif_upload_obj is not None:
             register_files_in_database(session)
         else:
-            with psycopg2.connect(**DB_CONFIG) as conn:
-                with conn.cursor() as cur:
-                    for kml_upload in session.kmls.all():
-                        kml_path = kml_upload.kml_file.path
-                        if not os.path.exists(kml_path) or not os.path.exists(tif_path):
-                            continue
-                        cur.execute("""
-                            INSERT INTO terrain_regions
-                            (source_path, base_tif_path, is_processed, session_id)
-                            VALUES (%s, %s, FALSE, %s)
-                            ON CONFLICT (source_path) DO NOTHING;
-                        """, (kml_path, tif_path, session.session_id))
-                    conn.commit()
+            for kml_upload in session.kmls.all():
+                kml_path = kml_upload.kml_file.path
+                if not os.path.exists(kml_path) or not os.path.exists(tif_path):
+                    continue
+                TerrainRegion.objects.get_or_create(
+                    source_path=kml_path,
+                    defaults={
+                        'base_tif_path': tif_path,
+                        'is_processed': False,
+                        'session_id': session.session_id,
+                    }
+                )
 
         # Запускаем асинхронную обработку
         thread = threading.Thread(target=process_files_async, args=(session.session_id,))
@@ -230,42 +216,28 @@ def download_results_zip(request):
         messages.error(request, 'Статус обработки не найден.')
         return redirect('index')
 
-    result_paths = []
-    with psycopg2.connect(**DB_CONFIG) as conn:
-        with conn.cursor() as cur:
-            cur.execute("""
-                SELECT result_path FROM terrain_regions
-                WHERE session_id = %s AND is_processed = TRUE
-            """, (upload_session_id,))
-            for row in cur.fetchall():
-                if row[0]:
-                    result_paths.append(row[0])
+    result_paths = list(TerrainRegion.objects.filter(
+        session_id=upload_session_id, 
+        is_processed=True
+    ).values_list('result_path', flat=True))
+
     print('DEBUG: result_paths:', result_paths)
 
     files_added = []
     zip_buffer = BytesIO()
     with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
         for result_path in result_paths:
-            if os.path.exists(result_path):
+            if result_path and os.path.exists(result_path):
                 for root, dirs, files in os.walk(result_path):
                     for file in files:
                         file_path = os.path.join(root, file)
                         arcname = os.path.relpath(file_path, result_path)
                         zip_file.write(file_path, os.path.join(os.path.basename(result_path), arcname))
-                        files_added.append(file_path)
-    print('DEBUG: files_added:', files_added)
 
-    zip_buffer.seek(0)
-    if files_added:
-        response = HttpResponse(zip_buffer, content_type='application/zip')
+        zip_file.close()
+        response = HttpResponse(zip_buffer.getvalue(), content_type='application/zip')
         response['Content-Disposition'] = 'attachment; filename="results.zip"'
-
-        status.can_download_results = False
-        status.save()
         return response
-    else:
-        messages.error(request, 'Нет обработанных результатов для скачивания.')
-        return redirect('index')
 
 
 def get_results_list(request):
@@ -283,8 +255,10 @@ def get_results_list(request):
 @require_POST
 def download_selected_results(request):
     import json
-    selected = json.loads(request.body).get('regions', [])
+    data = json.loads(request.body)
+    selected = data.get('regions', [])
     results_dir = settings.RESULTS_DIR
+
     zip_buffer = BytesIO()
     with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
         for region in selected:

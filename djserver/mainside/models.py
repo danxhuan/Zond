@@ -72,3 +72,17 @@ class ProcessingStatus(models.Model):
 
     def __str__(self):
         return f"Status for {self.session.session_id}: {self.status}"
+
+
+class TerrainRegion(models.Model):
+    source_path = models.TextField(unique=True)
+    base_tif_path = models.TextField()
+    region_path = models.TextField(null=True, blank=True)
+    enhanced_path = models.TextField(null=True, blank=True)
+    result_path = models.TextField(null=True, blank=True)
+    update_date = models.DateTimeField(null=True, blank=True)
+    is_processed = models.BooleanField(default=False)
+    session_id = models.CharField(max_length=36, db_index=True)
+
+    def __str__(self):
+        return f"{self.source_path} ({self.session_id})"

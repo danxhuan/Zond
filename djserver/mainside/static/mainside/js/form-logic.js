@@ -102,20 +102,20 @@ document.addEventListener('DOMContentLoaded', function () {
                     });
             } else {
                 // Если sessionId не определён, просто скачиваем (старое поведение)
-                fetch('/api/download-selected/', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({regions: checked})
-                })
-                    .then(response => response.blob())
-                    .then(blob => {
-                        const url = window.URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = "selected_results.zip";
-                        document.body.appendChild(a);
-                        a.click();
-                        a.remove();
+            fetch('/api/download-selected/', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({regions: checked})
+            })
+                .then(response => response.blob())
+                .then(blob => {
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = "selected_results.zip";
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
                         window.URL.revokeObjectURL(url);
                     })
                     .finally(() => {
